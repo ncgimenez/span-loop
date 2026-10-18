@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Span Loop — Le Radar des Échéances & Boucles Récurrentes</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2310b981'><path d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/></svg>">
+  
+  <!-- Tailwind CSS via official CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            span: {
+              root: '#080c14',
+              card: '#0e1626',
+              cardHover: '#131e33',
+              mint: '#10b981',
+              mintLight: '#34d399',
+              mintDark: '#059669',
+              slate: '#1f293d'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Custom Theme Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-[#080c14] text-slate-100 min-h-screen selection:bg-emerald-500/30 selection:text-emerald-200">
+  <!-- Dynamic Confetti Canvas -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-white/[0.07] bg-[#0b101c]/80 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Brand & Suite Switcher -->
+      <div class="flex items-center gap-6">
+        <div class="flex items-center gap-3">
+          <div id="brand-logo-container"></div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-lg tracking-tight text-white">SPAN</span>
+              <span class="text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Loop</span>
+            </div>
+            <p class="text-[11px] text-slate-400 font-medium hidden sm:block">Radar des échéances & Sérénité</p>
+          </div>
+        </div>
+
+        <!-- Suite Pillars Navigation Pill -->
+        <div class="hidden md:flex items-center gap-1.5 px-3 py-1 bg-white/[0.04] rounded-full border border-white/[0.06] text-xs font-medium text-slate-400">
+          <span class="hover:text-slate-200 cursor-pointer transition">Span Plan</span>
+          <span class="text-slate-600">·</span>
+          <span class="hover:text-slate-200 cursor-pointer transition">Span Focus</span>
+          <span class="text-slate-600">·</span>
+          <span class="text-emerald-400 font-semibold flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            Span Loop
+          </span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button id="btn-email-preview" class="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-white/[0.08] rounded-lg transition flex items-center gap-1.5">
+          <span id="icon-mail"></span>
+          <span class="hidden sm:inline">Simuler Email</span>
+        </button>
+
+        <button id="btn-history" class="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-white/[0.08] rounded-lg transition flex items-center gap-1.5">
+          <span id="icon-trend"></span>
+          <span class="hidden sm:inline">Historique</span>
+        </button>
+
+        <button id="btn-settings" class="p-2 text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-700/80 border border-white/[0.08] rounded-lg transition" title="Paramètres & Supabase">
+          <span id="icon-settings"></span>
+        </button>
+
+        <button id="btn-new-deadline" class="px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 rounded-lg shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition flex items-center gap-1.5">
+          <span id="icon-plus"></span>
+          <span>Ajouter</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    
+    <!-- Hero / Metrics Dashboard Ribbon -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      
+      <!-- Metric 1: Budget Récurrent Mensuel -->
+      <div class="span-card p-5">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-2">
+          <span>Budget Récurrent Estimé</span>
+          <span class="p-1 rounded bg-emerald-500/10 text-emerald-400" id="icon-stat-dollar"></span>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <div id="stat-monthly-budget" class="text-2xl sm:text-3xl font-bold tracking-tight text-white">0 €</div>
+          <span class="text-xs text-slate-400">/ mois</span>
+        </div>
+        <p class="text-[11px] text-slate-500 mt-2">Finances & abonnements normalisés</p>
+      </div>
+
+      <!-- Metric 2: Score de Consistance -->
+      <div class="span-card p-5">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-2">
+          <span>Score de Consistance</span>
+          <span class="p-1 rounded bg-emerald-500/10 text-emerald-400" id="icon-stat-sparkles"></span>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <div id="stat-consistency" class="text-2xl sm:text-3xl font-bold tracking-tight text-emerald-400">100%</div>
+          <span class="text-xs text-slate-400">à temps</span>
+        </div>
+        <div class="w-full bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden">
+          <div id="stat-consistency-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 100%"></div>
+        </div>
+      </div>
+
+      <!-- Metric 3: Échéances Urgentes -->
+      <div class="span-card p-5" id="card-stat-urgent">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-2">
+          <span>Urgent (< 48h)</span>
+          <span class="p-1 rounded bg-rose-500/10 text-rose-400" id="icon-stat-alert"></span>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <div id="stat-urgent-count" class="text-2xl sm:text-3xl font-bold tracking-tight text-rose-400">0</div>
+          <span class="text-xs text-slate-400">échéances</span>
+        </div>
+        <p class="text-[11px] text-slate-500 mt-2">Action immédiate requise</p>
+      </div>
+
+      <!-- Metric 4: Alertes Email Actives -->
+      <div class="span-card p-5">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-2">
+          <span>Moteur d'Alerte Email</span>
+          <span class="p-1 rounded bg-sky-500/10 text-sky-400" id="icon-stat-bell"></span>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <div class="text-xl sm:text-2xl font-bold tracking-tight text-sky-400">100% Auto</div>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-2 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span>Cron quotidien programmé à 08h00</span>
+        </p>
+      </div>
+
+    </section>
+
+    <!-- Search & Filter Controls Bar -->
+    <section class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pb-2">
+      <!-- Category Pills -->
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none" id="category-filter-group">
+        <button data-cat="all" class="category-pill active px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500 text-white transition">
+          Toutes
+        </button>
+        <button data-cat="finance" class="category-pill px-3.5 py-1.5 text-xs font-medium rounded-lg bg-slate-800/80 text-slate-300 hover:text-white hover:bg-slate-700/80 border border-white/[0.05] transition flex items-center gap-1.5">
+          <span>💳 Finances</span>
+        </button>
+        <button data-cat="subscription" class="category-pill px-3.5 py-1.5 text-xs font-medium rounded-lg bg-slate-800/80 text-slate-300 hover:text-white hover:bg-slate-700/80 border border-white/[0.05] transition flex items-center gap-1.5">
+          <span>🔄 Abonnements</span>
+        </button>
+        <button data-cat="admin" class="category-pill px-3.5 py-1.5 text-xs font-medium rounded-lg bg-slate-800/80 text-slate-300 hover:text-white hover:bg-slate-700/80 border border-white/[0.05] transition flex items-center gap-1.5">
+          <span>📁 Administratif</span>
+        </button>
+        <button data-cat="health" class="category-pill px-3.5 py-1.5 text-xs font-medium rounded-lg bg-slate-800/80 text-slate-300 hover:text-white hover:bg-slate-700/80 border border-white/[0.05] transition flex items-center gap-1.5">
+          <span>🌿 Rituels & Santé</span>
+        </button>
+      </div>
+
+      <!-- Search Input -->
+      <div class="relative w-full sm:w-64">
+        <span class="absolute left-3 top-2.5 text-slate-400" id="icon-search-input"></span>
+        <input type="text" id="input-search" placeholder="Rechercher une échéance..." class="w-full bg-slate-900/90 border border-white/[0.1] rounded-lg pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
+      </div>
+    </section>
+
+    <!-- Horizon Sections Grid -->
+    <div class="space-y-10" id="horizons-container">
+      
+      <!-- Horizon 1: En retard / Moins de 48h -->
+      <section id="section-urgent" class="space-y-3.5">
+        <div class="flex items-center justify-between border-b border-rose-500/20 pb-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 badge-urgent-pulse"></span>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-rose-400">En retard & Moins de 48h</h2>
+            <span id="badge-count-urgent" class="text-xs px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-300 border border-rose-500/20 font-bold">0</span>
+          </div>
+          <span class="text-xs text-slate-400">Action requise immédiatement</span>
+        </div>
+        <div id="grid-urgent" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </section>
+
+      <!-- Horizon 2: Cette semaine -->
+      <section id="section-this-week" class="space-y-3.5">
+        <div class="flex items-center justify-between border-b border-amber-500/20 pb-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-amber-300">Cette semaine (3 à 7 jours)</h2>
+            <span id="badge-count-this-week" class="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 font-bold">0</span>
+          </div>
+          <span class="text-xs text-slate-400">À préparer & anticiper</span>
+        </div>
+        <div id="grid-this-week" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </section>
+
+      <!-- Horizon 3: Ce mois-ci -->
+      <section id="section-this-month" class="space-y-3.5">
+        <div class="flex items-center justify-between border-b border-emerald-500/20 pb-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-emerald-300">Ce mois-ci (8 à 30 jours)</h2>
+            <span id="badge-count-this-month" class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-bold">0</span>
+          </div>
+          <span class="text-xs text-slate-400">Visibilité moyen terme</span>
+        </div>
+        <div id="grid-this-month" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </section>
+
+      <!-- Horizon 4: À venir (Plus tard) -->
+      <section id="section-later" class="space-y-3.5">
+        <div class="flex items-center justify-between border-b border-white/[0.08] pb-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400">À venir (> 30 jours)</h2>
+            <span id="badge-count-later" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-white/[0.06] font-bold">0</span>
+          </div>
+          <span class="text-xs text-slate-500">Sous radar automatique</span>
+        </div>
+        <div id="grid-later" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: AJOUTER / MODIFIER UNE ÉCHÉANCE                                     -->
+  <!-- ========================================================================= -->
+  <div id="modal-deadline" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+    <div class="modal-backdrop fixed inset-0"></div>
+    <div class="relative bg-[#0d1524] border border-white/[0.12] rounded-2xl w-full max-w-xl max-h-[92vh] overflow-y-auto shadow-2xl p-6 space-y-6">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-white/[0.08] pb-4">
+        <div>
+          <h3 id="modal-deadline-title" class="text-lg font-bold text-white">Ajouter une échéance récurrente</h3>
+          <p class="text-xs text-slate-400">Configurez l'obligation et vos règles d'alerte email automatique.</p>
+        </div>
+        <button id="btn-close-deadline-modal" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition">
+          <span id="icon-close-modal"></span>
+        </button>
+      </div>
+
+      <!-- Modal Form -->
+      <form id="form-deadline" class="space-y-5">
+        <input type="hidden" id="deadline-id" value="">
+
+        <!-- Titre -->
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Titre de l'échéance *</label>
+          <input type="text" id="deadline-title" required placeholder="ex: Payer le loyer, Déclaration TVA, Netflix..." class="w-full bg-[#141f33] border border-white/[0.1] rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 transition">
+        </div>
+
+        <!-- Catégorie -->
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">Catégorie</label>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="form-category-chips">
+            <label class="cursor-pointer border border-white/[0.08] rounded-lg p-2.5 text-center bg-[#141f33] hover:border-emerald-500/50 transition">
+              <input type="radio" name="form-cat" value="finance" checked class="hidden peer">
+              <div class="text-xs font-medium text-slate-300 peer-checked:text-emerald-400 peer-checked:font-bold">💳 Finances</div>
+            </label>
+            <label class="cursor-pointer border border-white/[0.08] rounded-lg p-2.5 text-center bg-[#141f33] hover:border-emerald-500/50 transition">
+              <input type="radio" name="form-cat" value="subscription" class="hidden peer">
+              <div class="text-xs font-medium text-slate-300 peer-checked:text-emerald-400 peer-checked:font-bold">🔄 Abonnement</div>
+            </label>
+            <label class="cursor-pointer border border-white/[0.08] rounded-lg p-2.5 text-center bg-[#141f33] hover:border-emerald-500/50 transition">
+              <input type="radio" name="form-cat" value="admin" class="hidden peer">
+              <div class="text-xs font-medium text-slate-300 peer-checked:text-emerald-400 peer-checked:font-bold">📁 Admin</div>
+            </label>
+            <label class="cursor-pointer border border-white/[0.08] rounded-lg p-2.5 text-center bg-[#141f33] hover:border-emerald-500/50 transition">
+              <input type="radio" name="form-cat" value="health" class="hidden peer">
+              <div class="text-xs font-medium text-slate-300 peer-checked:text-emerald-400 peer-checked:font-bold">🌿 Santé / Rituel</div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Date & Fréquence -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Prochaine Échéance *</label>
+            <input type="date" id="deadline-date" required class="w-full bg-[#141f33] border border-white/[0.1] rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Fréquence de Répétition</label>
+            <select id="deadline-frequency" class="w-full bg-[#141f33] border border-white/[0.1] rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition">
+              <option value="monthly">Mensuelle (tous les mois)</option>
+              <option value="quarterly">Trimestrielle (tous les 3 mois)</option>
+              <option value="biannual">Semestrielle (tous les 6 mois)</option>
+              <option value="annual">Annuelle (1 fois par an)</option>
+              <option value="weekly">Hebdomadaire (chaque semaine)</option>
+              <option value="once">Ponctuelle (1 seule fois)</option>
+              <option value="custom">Personnalisée en jours</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Custom Days field (hidden unless custom) -->
+        <div id="field-custom-days" class="hidden">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Répéter tous les X jours</label>
+          <input type="number" id="deadline-custom-days" min="1" max="1000" placeholder="ex: 45" class="w-full bg-[#141f33] border border-white/[0.1] rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition">
+        </div>
+
+        <!-- Montant Optionnel -->
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Montant en Euros (€) (facultatif)</label>
+          <div class="relative">
+            <input type="number" id="deadline-amount" step="0.01" min="0" placeholder="ex: 45.00" class="w-full bg-[#141f33] border border-white/[0.1] rounded-lg pl-3.5 pr-8 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition">
+            <span class="absolute right-3 top-2 text-slate-400 font-semibold">€</span>
+          </div>
+        </div>
+
+        <!-- Règles de Rappel Email -->
+        <div class="border-t border-white/[0.08] pt-4">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Règles d'anticipation par Email</label>
+          <p class="text-[11px] text-slate-400 mb-2.5">Quand souhaitez-vous recevoir l'email avec le bouton de validation en 1 clic ?</p>
+          
+          <div class="flex flex-wrap gap-2" id="rules-checkbox-group">
+            <label class="cursor-pointer">
+              <input type="checkbox" value="14" class="hidden peer">
+              <span class="px-2.5 py-1 text-xs rounded border border-white/[0.1] bg-[#141f33] text-slate-300 peer-checked:bg-emerald-500 peer-checked:text-white peer-checked:border-emerald-500 font-medium transition inline-block">J-14 (2 sem.)</span>
+            </label>
+            <label class="cursor-pointer">
+              <input type="checkbox" value="7" checked class="hidden peer">
+              <span class="px-2.5 py-1 text-xs rounded border border-white/[0.1] bg-[#141f33] text-slate-300 peer-checked:bg-emerald-500 peer-checked:text-white peer-checked:border-emerald-500 font-medium transition inline-block">J-7 (1 sem.)</span>
+            </label>
+            <label class="cursor-pointer">
+              <input type="checkbox" value="3" class="hidden peer">
+              <span class="px-2.5 py-1 text-xs rounded border border-white/[0.1] bg-[#141f33] text-slate-300 peer-checked:bg-emerald-500 peer-checked:text-white peer-checked:border-emerald-500 font-medium transition inline-block">J-3</span>
+            </label>
+            <label class="cursor-pointer">
+              <input type="checkbox" value="1" checked class="hidden peer">
+              <span class="px-2.5 py-1 text-xs rounded border border-white/[0.1] bg-[#141f33] text-slate-300 peer-checked:bg-emerald-500 peer-checked:text-white peer-checked:border-emerald-500 font-medium transition inline-block">J-1 (La veille)</span>
+            </label>
+            <label class="cursor-pointer">
+              <input type="checkbox" value="0" checked class="hidden peer">
+              <span class="px-2.5 py-1 text-xs rounded border border-white/[0.1] bg-[#141f33] text-slate-300 peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 font-medium transition inline-block">Jour J</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Email & Note / Liens -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Email Destinataire</label>
+            <input type="email" id="deadline-email" placeholder="votre@email.com" class="w-full bg-[#141f33] border border-white/[0.1] rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Lien Espace Client / Portail</label>
+            <input type="url" id="deadline-link" placeholder="https://..." class="w-full bg-[#141f33] border border-white/[0.1] rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Notes ou Instructions</label>
+          <textarea id="deadline-notes" rows="2" placeholder="Numéro de contrat, identifiant fiscal, instructions particulières..." class="w-full bg-[#141f33] border border-white/[0.1] rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition"></textarea>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-white/[0.08]">
+          <button type="button" id="btn-cancel-deadline" class="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white bg-transparent hover:bg-slate-800 rounded-lg transition">
+            Annuler
+          </button>
+          <button type="submit" class="px-5 py-2 text-sm font-semibold text-white bg-emerald-500 hover:bg-emerald-400 rounded-lg shadow-lg shadow-emerald-500/20 transition">
+            Enregistrer l'échéance
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: APERÇU EMAIL & SIMULATION DE RAPPEL                                 -->
+  <!-- ========================================================================= -->
+  <div id="modal-email-preview" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+    <div class="modal-backdrop fixed inset-0"></div>
+    <div class="relative bg-[#0d1524] border border-white/[0.12] rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-hidden shadow-2xl flex flex-col">
+      
+      <!-- Header -->
+      <div class="p-5 border-b border-white/[0.08] flex items-center justify-between">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            <h3 class="text-base font-bold text-white">Simulateur d'Alerte Email Transactionnel</h3>
+          </div>
+          <p class="text-xs text-slate-400 mt-0.5">Prévisualisez le template HTML exact reçu par l'utilisateur avec le bouton en 1 clic.</p>
+        </div>
+        <button id="btn-close-email-modal" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition">
+          <span id="icon-close-email-modal"></span>
+        </button>
+      </div>
+
+      <!-- Controls & Select deadline -->
+      <div class="px-5 py-3 bg-[#0a0f1b] border-b border-white/[0.06] flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-slate-400">Échéance à tester :</label>
+          <select id="email-preview-select" class="bg-[#141f33] border border-white/[0.1] rounded px-2.5 py-1 text-xs text-white focus:outline-none"></select>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btn-trigger-test-email" class="px-3 py-1 text-xs font-semibold rounded bg-emerald-500 hover:bg-emerald-400 text-white transition flex items-center gap-1.5 shadow">
+            <span>✉️ Envoyer un test</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Email Sandbox Iframe -->
+      <div class="flex-1 bg-black p-4 overflow-y-auto min-h-[420px]">
+        <iframe id="email-preview-iframe" class="w-full h-full min-h-[420px] rounded-lg border-0 bg-[#0b0f19]"></iframe>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: HISTORIQUE DES VALIDATIONS                                          -->
+  <!-- ========================================================================= -->
+  <div id="modal-history" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+    <div class="modal-backdrop fixed inset-0"></div>
+    <div class="relative bg-[#0d1524] border border-white/[0.12] rounded-2xl w-full max-w-xl max-h-[85vh] overflow-y-auto shadow-2xl p-6 space-y-5">
+      
+      <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <span>🎯 Historique d'Accomplissement</span>
+          </h3>
+          <p class="text-xs text-slate-400">Chaque validation en 1 clic reprogramme le cycle suivant et renforce votre consistance.</p>
+        </div>
+        <button id="btn-close-history-modal" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition">
+          <span id="icon-close-history"></span>
+        </button>
+      </div>
+
+      <div id="history-list" class="space-y-2.5"></div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: PARAMÈTRES & CONNEXION SUPABASE / RESEND                           -->
+  <!-- ========================================================================= -->
+  <div id="modal-settings" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+    <div class="modal-backdrop fixed inset-0"></div>
+    <div class="relative bg-[#0d1524] border border-white/[0.12] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl p-6 space-y-6">
+      
+      <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
+        <div>
+          <h3 class="text-base font-bold text-white">Paramètres & Intégrations</h3>
+          <p class="text-xs text-slate-400">Connectez Supabase et Resend ou utilisez le mode local 100% autonome.</p>
+        </div>
+        <button id="btn-close-settings-modal" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition">
+          <span id="icon-close-settings"></span>
+        </button>
+      </div>
+
+      <form id="form-settings" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Email par défaut</label>
+          <input type="email" id="settings-email" placeholder="alexandre@span.app" class="w-full bg-[#141f33] border border-white/[0.1] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+        </div>
+
+        <div class="border-t border-white/[0.08] pt-3">
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Supabase Backend (Optionnel)</label>
+            <span class="text-[10px] text-slate-500">PostgreSQL + Auth</span>
+          </div>
+          <p class="text-[11px] text-slate-400 mb-2">Par défaut, l'application fonctionne immédiatement en LocalStorage. Renseignez vos clés pour synchroniser avec Supabase.</p>
+          
+          <div class="space-y-2">
+            <input type="text" id="settings-supabase-url" placeholder="https://votre-projet.supabase.co" class="w-full bg-[#141f33] border border-white/[0.1] rounded-lg px-3 py-2 text-xs text-white focus:outline-none">
+            <input type="password" id="settings-supabase-key" placeholder="Supabase Anon Key (public)" class="w-full bg-[#141f33] border border-white/[0.1] rounded-lg px-3 py-2 text-xs text-white focus:outline-none">
+          </div>
+        </div>
+
+        <div class="border-t border-white/[0.08] pt-3">
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-xs font-semibold uppercase tracking-wider text-sky-400">Resend API Key (Optionnel)</label>
+            <span class="text-[10px] text-slate-500">Envois réels</span>
+          </div>
+          <p class="text-[11px] text-slate-400 mb-2">Si vide, les alertes fonctionnent en mode démo/simulation interactive.</p>
+          <input type="password" id="settings-resend-key" placeholder="re_123456789..." class="w-full bg-[#141f33] border border-white/[0.1] rounded-lg px-3 py-2 text-xs text-white focus:outline-none">
+        </div>
+
+        <div class="flex items-center justify-between border-t border-white/[0.08] pt-4">
+          <button type="button" id="btn-reset-demo" class="text-xs text-rose-400 hover:text-rose-300 underline">
+            Réinitialiser les données de démo
+          </button>
+          <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-400 rounded-lg shadow transition">
+            Sauvegarder
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- Main JavaScript Controller -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
