@@ -1,10 +1,10 @@
 {
   "name": "span-loop",
   "version": "1.0.0",
-  "description": "Span Loop - Le radar des échéances récurrentes et de la sérénité",
+  "description": "Span Loop - Le radar des échéances récurrentes & matelas de sérénité",
   "scripts": {
-    "start": "python3 -m http.server 8080",
-    "serve": "python3 -m http.server 8080"
+    "start": "python3 -m http.server 8082",
+    "serve": "python3 -m http.server 8082"
   },
   "keywords": ["productivity", "span", "loop", "deadlines", "recurring", "finance", "admin"],
   "author": "Span Productivity Suite",

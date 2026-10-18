@@ -40,15 +40,15 @@
 L'application est conçue en Vanilla JS moderne / HTML5 / Tailwind CSS : aucun build complexe ni dépendance lourde requise !
 
 ```bash
-cd /Users/ncgimenez/.gemini/antigravity/scratch/span-loop
+cd /Users/ncgimenez/Git/span-loop
 
-# Lancer le serveur local
-python3 -m http.server 8080
+# Lancer le serveur local (port 8082 pour éviter le conflit avec Span Focus)
+python3 -m http.server 8082
 # ou via npm :
 npm start
 ```
 
-Ouvrez ensuite votre navigateur sur : [http://localhost:8080](http://localhost:8080)
+Ouvrez ensuite votre navigateur sur : [http://localhost:8082](http://localhost:8082)
 
 > L'application démarre immédiatement avec des données réalistes pré-remplies stockées dans votre navigateur (`LocalStorage`).
 
