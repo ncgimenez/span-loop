@@ -1,631 +1,369 @@
 <!DOCTYPE html>
-<html lang="fr" class="dark">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Span Loop — Le Radar des Échéances & Matelas de Sérénité</title>
+  <title>Span Loop</title>
   
-  <meta name="theme-color" content="#0d0d0f">
+  <meta name="theme-color" content="#0d0d0f" id="themeMetaColor">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Loop">
 
   <link rel="icon" type="image/svg+xml" href="span-logo.svg">
-  
-  <!-- Tailwind CSS via official CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            span: {
-              root: '#0d0d0f',
-              card: '#141418',
-              cardHover: '#1a1a20',
-              mint: '#10b981',
-              mintLight: '#34d399',
-              mintDark: '#059669',
-              slate: '#1f293d'
-            }
-          }
-        }
-      }
-    }
-  </script>
-
-  <!-- Custom Theme Styles (Coherent with Focus & Plan) -->
   <link rel="stylesheet" href="css/styles.css">
 </head>
-<body class="bg-[#0d0d0f] text-[#f4f4f6] min-h-screen selection:bg-emerald-500/30 selection:text-emerald-200">
-  <!-- Dynamic Confetti Canvas -->
-  <canvas id="confetti-canvas"></canvas>
+<body>
 
-  <!-- Toast Notification Container -->
-  <div id="toast-container"></div>
+  <!-- Dynamic Celebration Particles -->
+  <canvas class="celebration-canvas" id="confetti-canvas"></canvas>
 
-  <!-- Command Palette Modal (Cmd+K) -->
-  <div id="cmd-palette" class="fixed inset-0 z-50 flex items-start justify-center pt-24 p-4 hidden">
-    <div class="cmd-backdrop fixed inset-0" onclick="window.app && window.app.closeCmdPalette()"></div>
-    <div class="cmd-modal relative p-3 space-y-2 z-10 animate-in fade-in zoom-in-95 duration-150">
-      <div class="flex items-center gap-3 px-3 py-2 border-b border-white/[0.08]">
-        <span class="text-slate-400" id="cmd-search-icon"></span>
-        <input type="text" id="cmd-input" placeholder="Que voulez-vous faire ? (ex: ajouter, filtrer, email, épargne...)" class="w-full bg-transparent border-none text-sm text-white placeholder-slate-500 focus:outline-none">
-        <span class="cmd-key">ESC</span>
-      </div>
-      <div id="cmd-results" class="space-y-1 max-h-72 overflow-y-auto pt-1">
-        <!-- Rendered dynamically -->
-      </div>
-    </div>
-  </div>
+  <!-- Authentic Span Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
 
-  <!-- TOP HEADER (Coherent with Span Focus & Span Plan) -->
-  <header class="border-b border-white/[0.08] bg-[#0d0d0f]/90 backdrop-blur-md sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      
-      <!-- Brand & Suite Bridges -->
-      <div class="flex items-center gap-5">
-        <div class="flex items-center gap-3 cursor-pointer" onclick="window.scrollTo({top:0, behavior:'smooth'})">
-          <div id="brand-logo-container"></div>
-          <div class="flex items-baseline gap-2">
-            <span class="font-bold text-lg tracking-tight text-white">Span</span>
-            <span class="text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Loop</span>
-          </div>
-        </div>
-
-        <!-- Suite Bridges Pills (Plan ↗, Focus ↗, Loop ●) -->
-        <div class="hidden md:flex items-center gap-2">
-          <a href="/span-plan/" class="suite-bridge-btn bridge-plan" title="Planification de la semaine">
-            <span>📅</span>
-            <span>Plan ↗</span>
-          </a>
-          <a href="/span-focus/" class="suite-bridge-btn bridge-focus" title="Chrono & Immersion Pomodoro">
-            <span>⚡</span>
-            <span>Focus ↗</span>
-          </a>
-          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 text-xs font-semibold">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>Loop</span>
-          </span>
-        </div>
-      </div>
-
-      <!-- Action Buttons & Shortcuts -->
-      <div class="flex items-center gap-2 sm:gap-2.5">
-        <!-- Quick Cmd+K Pill -->
-        <button id="btn-trigger-cmd" class="hidden sm:flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] rounded-lg transition" title="Palette de commande (⌘K)">
-          <span id="icon-search-btn"></span>
-          <span>Recherche</span>
-          <span class="cmd-key text-[10px]">⌘K</span>
-        </button>
-
-        <!-- Sinking Fund Button -->
-        <button id="btn-sinking-funds" class="px-2.5 py-1.5 text-xs font-medium text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 rounded-lg transition flex items-center gap-1.5" title="Matelas d'Épargne d'Anticipation">
-          <span>🛡️</span>
-          <span class="hidden sm:inline">Matelas d'Épargne</span>
-        </button>
-
-        <!-- Sound Feedback Toggle -->
-        <button id="btn-sound-toggle" class="p-2 text-slate-400 hover:text-emerald-400 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] rounded-lg transition" title="Son de validation (actif)">
-          <span id="sound-icon">🔔</span>
-        </button>
-
-        <!-- Email Preview -->
-        <button id="btn-email-preview" class="p-2 sm:px-3 sm:py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] rounded-lg transition flex items-center gap-1.5" title="Simuler l'alerte email">
-          <span id="icon-mail"></span>
-          <span class="hidden sm:inline">Simulateur Email</span>
-        </button>
-
-        <!-- History -->
-        <button id="btn-history" class="p-2 sm:px-3 sm:py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] rounded-lg transition flex items-center gap-1.5" title="Historique d'accomplissement">
-          <span id="icon-trend"></span>
-          <span class="hidden sm:inline">Historique</span>
-        </button>
-
-        <!-- Settings -->
-        <button id="btn-settings" class="p-2 text-slate-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] rounded-lg transition" title="Paramètres & Supabase">
-          <span id="icon-settings"></span>
-        </button>
-
-        <!-- Primary CTA: Add Deadline -->
-        <button id="btn-new-deadline" class="px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 rounded-lg shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition flex items-center gap-1.5 active:scale-95" title="Nouvelle échéance (N)">
-          <span id="icon-plus"></span>
-          <span>Ajouter</span>
-          <span class="hidden lg:inline text-[10px] opacity-75 font-mono">N</span>
-        </button>
-      </div>
-
-    </div>
-  </header>
-
-  <!-- MAIN APPLICATION SHELL -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 space-y-7">
+  <div class="desktop-shell" id="appShell">
     
-    <!-- METRICS & SINKING FUND HERO RIBBON -->
-    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+    <!-- 1. UNIFIED APP HEADER (MATCHING SPAN FOCUS & SPAN PLAN) -->
+    <header class="app-header">
+      <div class="brand" onclick="window.scrollTo({top:0, behavior:'smooth'})" title="Span Loop">
+        <svg class="brand-logo" viewBox="0 0 32 32" fill="none" aria-label="Span Loop Logo">
+          <path d="M 30 2 H 2 L 12 13 L 20 8 H 8 L 12 4 H 26 Z" fill="url(#loopMintTop)" />
+          <path d="M 2 30 H 30 L 20 19 L 12 24 H 24 L 20 28 H 6 Z" fill="url(#loopMintBot)" />
+          <path d="M 16 10.5 C 13.0 10.5 10.5 13.0 10.5 16 C 10.5 19.0 13.0 21.5 16 21.5 C 19.0 21.5 21.5 19.0 21.5 16 C 21.5 13.0 19.0 10.5 16 10.5 Z" fill="#141418" />
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M 16 12 C 13.79 12 12 13.79 12 16 C 12 18.21 13.79 20 16 20 C 18.21 20 20 18.21 20 16 C 20 13.79 18.21 12 16 12 Z M 16 14 C 14.9 14 14 14.9 14 16 C 14 17.1 14.9 18 16 18 C 17.1 18 18 17.1 18 16 C 18 14.9 17.1 14 16 14 Z" fill="#ffffff" />
+          <circle cx="16" cy="12.5" r="1.1" fill="#34d399" />
+          <defs>
+            <linearGradient id="loopMintTop" x1="30" y1="2" x2="2" y2="14" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#10b981" />
+              <stop offset="1" stop-color="#34d399" />
+            </linearGradient>
+            <linearGradient id="loopMintBot" x1="2" y1="18" x2="30" y2="30" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#059669" />
+              <stop offset="1" stop-color="#10b981" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <span class="brand-name">Span</span>
+        <span class="brand-app" id="headerTitle">Loop</span>
+      </div>
       
-      <!-- Metric 1: Budget Fixe Mensuel -->
-      <div class="span-card p-4 sm:p-5 flex flex-col justify-between">
-        <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-1.5">
-          <span>Charges Fixes Lissées</span>
-          <span class="p-1 rounded bg-white/[0.05] text-slate-300" id="icon-stat-dollar"></span>
-        </div>
-        <div class="flex items-baseline gap-1.5">
-          <div id="stat-monthly-budget" class="text-2xl sm:text-3xl font-bold tracking-tight text-white">0 €</div>
-          <span class="text-xs text-slate-400">/ mois</span>
-        </div>
-        <p class="text-[11px] text-slate-500 mt-2">Loyer, forfaits & abonnements</p>
+      <div class="header-actions">
+        <button class="icon-btn btn-track-desktop" id="btnHeaderSinking" onclick="window.app.setView('sinking')" title="Voir le Matelas d'Épargne">🛡️ Matelas</button>
+        <button class="icon-btn" id="soundBtn" onclick="window.app.toggleSound()" title="Retour sonore Web Audio">
+          <span id="soundIcon">🎧</span>
+        </button>
+        <button class="icon-btn" onclick="window.app.openEmailModal()" title="Simuler Email d'alerte">✉️</button>
+        <button class="icon-btn" onclick="window.app.openSettingsModal()" title="Paramètres & Supabase">⚙️</button>
+        <a href="/span-focus/" class="plan-bridge-btn" id="focusBridgeLink" title="Aller sur Span Focus">Focus ↗</a>
+        <a href="/span-plan/" class="plan-bridge-btn" id="planBridgeLink" title="Aller sur Span Plan">Plan ↗</a>
+      </div>
+    </header>
+
+    <!-- 2. SIGNATURE SPAN GOAL TRACKER (MATELAS DE SÉRÉNITÉ / SINKING FUND) -->
+    <div class="goal-tracker" onclick="window.app.setView('sinking')" title="Cliquer pour voir et ajuster le provisionnement mensuel">
+      <div class="goal-meta">
+        <span>🛡️ Matelas de Sérénité (Sinking Fund)</span>
+        <span class="goal-amount-badge" id="sinkingGoalPercent">+0 € / mois</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="sinkingGoalBar"></div>
+      </div>
+    </div>
+
+    <!-- 3. QUICK OBLIGATION INPUT BAR (MATCHING SPAN FOCUS TASK INPUT) -->
+    <div class="task-input-container">
+      <input type="text" class="task-input" id="quickInputTitle" placeholder="Ajouter une obligation récurrente... (Appuyez sur Entrée)" onkeydown="if(event.key==='Enter') window.app.quickAddFromBar()">
+      <input type="number" id="quickInputAmount" placeholder="Montant €" min="0" step="1" class="target-select" style="width: 100px;">
+      <select class="target-select" id="quickInputFreq" title="Fréquence de récurrence">
+        <option value="monthly" selected>Mensuel</option>
+        <option value="quarterly">Trimestriel</option>
+        <option value="biannual">Semestriel</option>
+        <option value="annual">Annuel</option>
+        <option value="once">Ponctuel</option>
+      </select>
+      <select class="category-select" id="quickInputCat" title="Catégorie">
+        <option value="finance">Home (Finances)</option>
+        <option value="subscription">Fun (Abonnements)</option>
+        <option value="admin">Work (Admin & Légal)</option>
+        <option value="health">Rituels & Santé</option>
+      </select>
+      <button class="btn-add" onclick="window.app.quickAddFromBar()">Add</button>
+    </div>
+
+    <!-- 4. ONE-TAP PRESETS BAR -->
+    <div class="presets-bar">
+      <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-right: 2px;">Modèles :</span>
+      <button class="preset-chip" onclick="window.app.applyPreset('rent')"><span>🏢</span> Loyer</button>
+      <button class="preset-chip" onclick="window.app.applyPreset('netflix')"><span>🍿</span> Netflix 14.99€</button>
+      <button class="preset-chip" onclick="window.app.applyPreset('spotify')"><span>🎵</span> Spotify 10.99€</button>
+      <button class="preset-chip" onclick="window.app.applyPreset('tax')"><span>💼</span> Déclaration TVA</button>
+      <button class="preset-chip" onclick="window.app.applyPreset('car')"><span>🚗</span> Assurance Auto 600€/an</button>
+      <button class="preset-chip" onclick="window.app.applyPreset('dentist')"><span>🦷</span> Dentiste Annuel</button>
+      <button class="preset-chip" onclick="window.app.applyPreset('trial')"><span>⏳</span> Essai Gratuit</button>
+    </div>
+
+    <!-- 5. UNIFIED TOOLBAR: VIEW SWITCHER + TRI-CATEGORY FILTERS -->
+    <div class="tasks-toolbar-unified">
+      <div class="mode-switch">
+        <button class="mode-btn active" id="tabRadar" onclick="window.app.setView('radar')">Radar des Boucles</button>
+        <button class="mode-btn" id="tabSinking" onclick="window.app.setView('sinking')">🛡️ Matelas d'Épargne</button>
+        <button class="mode-btn" id="tabHistory" onclick="window.app.setView('history')">🎯 Historique</button>
       </div>
 
-      <!-- Metric 2: Matelas d'Épargne d'Anticipation (Sinking Fund) -->
-      <div class="span-card p-4 sm:p-5 flex flex-col justify-between cursor-pointer hover:border-emerald-500/40" id="card-stat-sinking" title="Cliquer pour voir le détail du provisionnement">
-        <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-1.5">
-          <span class="text-emerald-400 font-semibold flex items-center gap-1">
-            <span>🛡️ Provision d'Épargne</span>
-          </span>
-          <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 font-mono">Détail →</span>
-        </div>
-        <div class="flex items-baseline gap-1.5">
-          <div id="stat-sinking-monthly" class="text-2xl sm:text-3xl font-bold tracking-tight text-emerald-400">+0 €</div>
-          <span class="text-xs text-slate-400">/ mois</span>
-        </div>
-        <div class="flex items-center justify-between text-[11px] text-slate-400 mt-2">
-          <span id="stat-sinking-note">Pour amortir 0 grosses échéances</span>
-        </div>
-      </div>
-
-      <!-- Metric 3: Score de Consistance & Streak -->
-      <div class="span-card p-4 sm:p-5 flex flex-col justify-between">
-        <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-1.5">
-          <span>Sérénité & Consistance</span>
-          <span class="text-xs font-bold text-amber-400 flex items-center gap-1">🔥 Série</span>
-        </div>
-        <div class="flex items-baseline gap-1.5">
-          <div id="stat-consistency" class="text-2xl sm:text-3xl font-bold tracking-tight text-white">100%</div>
-          <span class="text-xs text-slate-400">à temps</span>
-        </div>
-        <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2.5 overflow-hidden">
-          <div id="stat-consistency-bar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500" style="width: 100%"></div>
-        </div>
-      </div>
-
-      <!-- Metric 4: Alertes Urgentes (<48h) -->
-      <div class="span-card p-4 sm:p-5 flex flex-col justify-between" id="card-stat-urgent">
-        <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-1.5">
-          <span>Urgences (< 48h)</span>
-          <span class="p-1 rounded bg-rose-500/10 text-rose-400" id="icon-stat-alert"></span>
-        </div>
-        <div class="flex items-baseline gap-1.5">
-          <div id="stat-urgent-count" class="text-2xl sm:text-3xl font-bold tracking-tight text-rose-400">0</div>
-          <span class="text-xs text-slate-400">échéances</span>
-        </div>
-        <p class="text-[11px] text-slate-400 mt-2 flex items-center gap-1.5">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-          <span>Alertes email programmées à 08h00</span>
-        </p>
-      </div>
-
-    </section>
-
-    <!-- ONE-TAP PRESETS BAR (Quick templates popular among users) -->
-    <section class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs">
-      <span class="text-slate-500 font-medium text-[11px] uppercase tracking-wider shrink-0 mr-1">Ajout rapide :</span>
-      <button class="preset-chip" onclick="window.app.applyPreset('netflix')">
-        <span>🍿</span> <span>Netflix</span> <span class="text-slate-500">14.99€</span>
-      </button>
-      <button class="preset-chip" onclick="window.app.applyPreset('spotify')">
-        <span>🎵</span> <span>Spotify</span> <span class="text-slate-500">10.99€</span>
-      </button>
-      <button class="preset-chip" onclick="window.app.applyPreset('rent')">
-        <span>🏢</span> <span>Loyer</span> <span class="text-slate-500">Mensuel</span>
-      </button>
-      <button class="preset-chip" onclick="window.app.applyPreset('tax')">
-        <span>💼</span> <span>Déclaration TVA</span> <span class="text-slate-500">Trimestriel</span>
-      </button>
-      <button class="preset-chip" onclick="window.app.applyPreset('car')">
-        <span>🚗</span> <span>Assurance Auto</span> <span class="text-slate-500">Annuel</span>
-      </button>
-      <button class="preset-chip" onclick="window.app.applyPreset('dentist')">
-        <span>🦷</span> <span>Dentiste</span> <span class="text-slate-500">Annuel</span>
-      </button>
-      <button class="preset-chip" onclick="window.app.applyPreset('trial')">
-        <span>⏳</span> <span>Essai gratuit à résilier</span>
-      </button>
-    </section>
-
-    <!-- FILTER & SEARCH BAR -->
-    <section class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3.5 pt-1">
-      <!-- Category Pills Filter -->
-      <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none" id="category-filter-group">
-        <button data-cat="all" class="category-pill active px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500 text-white transition">
-          Toutes
+      <div class="quick-category-filters" id="quickCategoryFilters">
+        <button type="button" class="cat-filter-btn active" data-cat="all" onclick="window.app.setCategoryFilter('all')">
+          <span>All</span> <span class="cat-count-pill" id="catCountAll">0</span>
         </button>
-        <button data-cat="finance" class="category-pill px-3 py-1.5 text-xs font-medium rounded-lg bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08] border border-white/[0.06] transition flex items-center gap-1.5">
-          <span>💳 Finances</span>
+        <button type="button" class="cat-filter-btn" data-cat="finance" onclick="window.app.setCategoryFilter('finance')">
+          <span class="cat-dot-indicator dot-home"></span>
+          <span>Finances</span> <span class="cat-count-pill" id="catCountFinance">0</span>
         </button>
-        <button data-cat="subscription" class="category-pill px-3 py-1.5 text-xs font-medium rounded-lg bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08] border border-white/[0.06] transition flex items-center gap-1.5">
-          <span>🔄 Abonnements</span>
+        <button type="button" class="cat-filter-btn" data-cat="subscription" onclick="window.app.setCategoryFilter('subscription')">
+          <span class="cat-dot-indicator dot-fun"></span>
+          <span>Abonnements</span> <span class="cat-count-pill" id="catCountSub">0</span>
         </button>
-        <button data-cat="admin" class="category-pill px-3 py-1.5 text-xs font-medium rounded-lg bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08] border border-white/[0.06] transition flex items-center gap-1.5">
-          <span>📁 Administratif</span>
+        <button type="button" class="cat-filter-btn" data-cat="admin" onclick="window.app.setCategoryFilter('admin')">
+          <span class="cat-dot-indicator dot-work"></span>
+          <span>Admin</span> <span class="cat-count-pill" id="catCountAdmin">0</span>
         </button>
-        <button data-cat="health" class="category-pill px-3 py-1.5 text-xs font-medium rounded-lg bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08] border border-white/[0.06] transition flex items-center gap-1.5">
-          <span>🌿 Rituels & Santé</span>
+        <button type="button" class="cat-filter-btn" data-cat="health" onclick="window.app.setCategoryFilter('health')">
+          <span class="cat-dot-indicator dot-health"></span>
+          <span>Rituels</span> <span class="cat-count-pill" id="catCountHealth">0</span>
         </button>
       </div>
+    </div>
 
-      <!-- Instant Search Input -->
-      <div class="relative w-full sm:w-64">
-        <span class="absolute left-3 top-2.5 text-slate-400" id="icon-search-input"></span>
-        <input type="text" id="input-search" placeholder="Rechercher une échéance..." class="w-full bg-[#141418] border border-white/[0.08] rounded-lg pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
-      </div>
-    </section>
-
-    <!-- HORIZONS WORKSPACE CONTAINER -->
-    <div class="space-y-9" id="horizons-container">
+    <!-- 6. VIEW 1: RADAR DES HORIZONS (4 TEMPORAL HORIZONS) -->
+    <div id="view-radar" class="horizons-wrap">
       
-      <!-- Horizon 1: Urgent & En retard (< 48h) -->
-      <section id="section-urgent" class="space-y-3">
-        <div class="flex items-center justify-between border-b border-rose-500/20 pb-2">
-          <div class="flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 badge-urgent-pulse"></span>
-            <h2 class="text-xs font-bold uppercase tracking-wider text-rose-400">En retard & Moins de 48h</h2>
-            <span id="badge-count-urgent" class="text-xs px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-300 border border-rose-500/20 font-bold">0</span>
+      <!-- Horizon 1: Urgences & En retard (< 48h) -->
+      <section class="horizon-section" id="section-urgent">
+        <div class="horizon-header">
+          <div class="horizon-title-group">
+            <span class="horizon-dot dot-urgent"></span>
+            <span class="horizon-title urgent">En retard & Moins de 48h</span>
+            <span class="horizon-count" id="badge-count-urgent">0</span>
           </div>
-          <span class="text-[11px] text-slate-400">Action requise immédiatement</span>
+          <span style="font-size: 11px; color: var(--text-muted);">Action requise</span>
         </div>
-        <div id="grid-urgent" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5"></div>
+        <div class="task-list-loop" id="grid-urgent"></div>
       </section>
 
       <!-- Horizon 2: Cette semaine (3 à 7 jours) -->
-      <section id="section-this-week" class="space-y-3">
-        <div class="flex items-center justify-between border-b border-amber-500/20 pb-2">
-          <div class="flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
-            <h2 class="text-xs font-bold uppercase tracking-wider text-amber-300">Cette semaine (3 à 7 jours)</h2>
-            <span id="badge-count-this-week" class="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 font-bold">0</span>
+      <section class="horizon-section" id="section-this-week">
+        <div class="horizon-header">
+          <div class="horizon-title-group">
+            <span class="horizon-dot dot-week"></span>
+            <span class="horizon-title">Cette semaine (3 à 7 jours)</span>
+            <span class="horizon-count" id="badge-count-this-week">0</span>
           </div>
-          <span class="text-[11px] text-slate-400">À préparer & anticiper</span>
+          <span style="font-size: 11px; color: var(--text-muted);">À anticiper</span>
         </div>
-        <div id="grid-this-week" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5"></div>
+        <div class="task-list-loop" id="grid-this-week"></div>
       </section>
 
       <!-- Horizon 3: Ce mois-ci (8 à 30 jours) -->
-      <section id="section-this-month" class="space-y-3">
-        <div class="flex items-center justify-between border-b border-emerald-500/20 pb-2">
-          <div class="flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-            <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-300">Ce mois-ci (8 à 30 jours)</h2>
-            <span id="badge-count-this-month" class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-bold">0</span>
+      <section class="horizon-section" id="section-this-month">
+        <div class="horizon-header">
+          <div class="horizon-title-group">
+            <span class="horizon-dot dot-month"></span>
+            <span class="horizon-title">Ce mois-ci (8 à 30 jours)</span>
+            <span class="horizon-count" id="badge-count-this-month">0</span>
           </div>
-          <span class="text-[11px] text-slate-400">Visibilité moyen terme</span>
+          <span style="font-size: 11px; color: var(--text-muted);">Moyen terme</span>
         </div>
-        <div id="grid-this-month" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5"></div>
+        <div class="task-list-loop" id="grid-this-month"></div>
       </section>
 
       <!-- Horizon 4: À venir (> 30 jours) -->
-      <section id="section-later" class="space-y-3">
-        <div class="flex items-center justify-between border-b border-white/[0.08] pb-2">
-          <div class="flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
-            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">À venir (> 30 jours)</h2>
-            <span id="badge-count-later" class="text-xs px-2 py-0.5 rounded-full bg-white/[0.05] text-slate-300 border border-white/[0.06] font-bold">0</span>
+      <section class="horizon-section" id="section-later">
+        <div class="horizon-header">
+          <div class="horizon-title-group">
+            <span class="horizon-dot dot-later"></span>
+            <span class="horizon-title">À venir (> 30 jours)</span>
+            <span class="horizon-count" id="badge-count-later">0</span>
           </div>
-          <span class="text-[11px] text-slate-500">Veille automatique en arrière-plan</span>
+          <span style="font-size: 11px; color: var(--text-muted);">Veille automatique</span>
         </div>
-        <div id="grid-later" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5"></div>
+        <div class="task-list-loop" id="grid-later"></div>
       </section>
 
     </div>
 
-  </main>
-
-  <!-- ========================================================================= -->
-  <!-- MODAL: SINKING FUNDS / MATELAS D'ÉPARGNE D'ANTICIPATION                   -->
-  <!-- ========================================================================= -->
-  <div id="modal-sinking-funds" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-    <div class="modal-backdrop fixed inset-0" onclick="window.app.closeSinkingModal()"></div>
-    <div class="relative bg-[#141418] border border-white/[0.12] rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl p-6 space-y-6">
-      
-      <div class="flex items-center justify-between border-b border-white/[0.08] pb-4">
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="text-lg">🛡️</span>
-            <h3 class="text-base font-bold text-white">Matelas de Sérénité Financière</h3>
-          </div>
-          <p class="text-xs text-slate-400 mt-0.5">Le montant précis à provisionner chaque mois pour absorber les futures grosses dépenses sans découvert.</p>
+    <!-- 7. VIEW 2: MATELAS DE SÉRÉNITÉ (SINKING FUNDS VIEW) -->
+    <div id="view-sinking" class="sinking-panel" style="display: none;">
+      <div class="sinking-summary-card">
+        <div class="sinking-stat-block">
+          <span class="sinking-stat-label">Provision Mensuelle Recommandée</span>
+          <span class="sinking-stat-val highlight" id="sinking-panel-monthly">+0 €</span>
+          <span style="font-size: 11px; color: var(--text-muted);">Pour absorber les gros chocs</span>
         </div>
-        <button onclick="window.app.closeSinkingModal()" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/[0.05] transition">
-          <span id="icon-close-sinking"></span>
-        </button>
-      </div>
-
-      <!-- Sinking Summary Banner -->
-      <div class="p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 to-slate-900 border border-emerald-500/25 space-y-2">
-        <div class="flex items-center justify-between">
-          <span class="text-xs text-slate-300 font-medium">Provision d'épargne mensuelle recommandée :</span>
-          <span id="sinking-modal-monthly" class="text-xl font-bold text-emerald-400">+0 € / mois</span>
+        <div class="sinking-stat-block">
+          <span class="sinking-stat-label">Charges Fixes Mensuelles</span>
+          <span class="sinking-stat-val" id="sinking-panel-fixed">0 €</span>
+          <span style="font-size: 11px; color: var(--text-muted);">Loyer, abonnements lissés</span>
         </div>
-        <div class="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-white/[0.06]">
-          <span>+ Charges fixes récurrentes :</span>
-          <span id="sinking-modal-fixed">0 € / mois</span>
-        </div>
-        <div class="flex items-center justify-between text-xs font-semibold text-white pt-1">
-          <span>= Budget mensuel sanctuarisé total :</span>
-          <span id="sinking-modal-total" class="text-emerald-300 font-bold">0 € / mois</span>
+        <div class="sinking-stat-block">
+          <span class="sinking-stat-label">Total Sanctuarisé Sécurité</span>
+          <span class="sinking-stat-val" id="sinking-panel-total">0 €</span>
+          <span style="font-size: 11px; color: var(--text-muted);">À bloquer chaque 1er du mois</span>
         </div>
       </div>
 
-      <!-- Detailed Breakdown Table -->
-      <div class="space-y-3">
-        <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-300">Détail par échéance future :</h4>
-        <div id="sinking-breakdown-list" class="space-y-2 max-h-60 overflow-y-auto">
-          <!-- Rendered dynamically -->
-        </div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <span class="sinking-stat-label">Détail des échéances amorties :</span>
+        <div class="task-list-loop" id="sinking-breakdown-list"></div>
       </div>
-
-      <div class="text-[11px] text-slate-500 bg-white/[0.02] p-3 rounded-lg border border-white/[0.04]">
-        💡 <strong>Principe du Sinking Fund :</strong> En virant automatiquement cette somme vers un livret chaque mois, vous payez vos assurances, taxes et contrôles sans toucher à votre salaire du mois J.
-      </div>
-
     </div>
+
+    <!-- 8. VIEW 3: HISTORIQUE D'ACCOMPLISSEMENT -->
+    <div id="view-history" class="sinking-panel" style="display: none;">
+      <div class="sinking-stat-block" style="padding: 10px 0;">
+        <span class="sinking-stat-label">Score de Consistance</span>
+        <span class="sinking-stat-val highlight" id="historyConsistencyVal">100% à temps</span>
+      </div>
+      <div class="task-list-loop" id="history-list"></div>
+    </div>
+
   </div>
 
   <!-- ========================================================================= -->
   <!-- MODAL: AJOUTER / MODIFIER UNE ÉCHÉANCE                                     -->
   <!-- ========================================================================= -->
-  <div id="modal-deadline" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-    <div class="modal-backdrop fixed inset-0"></div>
-    <div class="relative bg-[#141418] border border-white/[0.12] rounded-2xl w-full max-w-xl max-h-[92vh] overflow-y-auto shadow-2xl p-6 space-y-5">
-      
-      <!-- Modal Header -->
-      <div class="flex items-center justify-between border-b border-white/[0.08] pb-3.5">
-        <div>
-          <h3 id="modal-deadline-title" class="text-base font-bold text-white">Ajouter une obligation récurrente</h3>
-          <p class="text-xs text-slate-400">Configurez votre cycle et vos alertes email automatiques en 1 clic.</p>
-        </div>
-        <button id="btn-close-deadline-modal" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/[0.05] transition">
-          <span id="icon-close-modal"></span>
-        </button>
+  <div class="modal-overlay" id="modal-deadline">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span id="modal-deadline-title">Échéance récurrente</span>
+        <button class="modal-close" onclick="window.app.closeDeadlineModal()">✕</button>
       </div>
 
-      <!-- Form -->
-      <form id="form-deadline" class="space-y-4">
+      <form id="form-deadline" onsubmit="event.preventDefault(); window.app.saveDeadlineFromForm();">
         <input type="hidden" id="deadline-id" value="">
-
-        <!-- Titre -->
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Titre de l'obligation *</label>
-          <input type="text" id="deadline-title" required placeholder="ex: Payer le loyer, Déclaration TVA, Netflix, Assurance auto..." class="w-full bg-[#1c1c22] border border-white/[0.08] rounded-lg px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 transition">
-        </div>
-
-        <!-- Catégorie -->
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Catégorie</label>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="form-category-chips">
-            <label class="cursor-pointer border border-white/[0.08] rounded-lg p-2 text-center bg-[#1c1c22] hover:border-emerald-500/50 transition">
-              <input type="radio" name="form-cat" value="finance" checked class="hidden peer">
-              <div class="text-xs font-medium text-slate-300 peer-checked:text-emerald-400 peer-checked:font-bold">💳 Finances</div>
-            </label>
-            <label class="cursor-pointer border border-white/[0.08] rounded-lg p-2 text-center bg-[#1c1c22] hover:border-emerald-500/50 transition">
-              <input type="radio" name="form-cat" value="subscription" class="hidden peer">
-              <div class="text-xs font-medium text-slate-300 peer-checked:text-emerald-400 peer-checked:font-bold">🔄 Abonnement</div>
-            </label>
-            <label class="cursor-pointer border border-white/[0.08] rounded-lg p-2 text-center bg-[#1c1c22] hover:border-emerald-500/50 transition">
-              <input type="radio" name="form-cat" value="admin" class="hidden peer">
-              <div class="text-xs font-medium text-slate-300 peer-checked:text-emerald-400 peer-checked:font-bold">📁 Admin</div>
-            </label>
-            <label class="cursor-pointer border border-white/[0.08] rounded-lg p-2 text-center bg-[#1c1c22] hover:border-emerald-500/50 transition">
-              <input type="radio" name="form-cat" value="health" class="hidden peer">
-              <div class="text-xs font-medium text-slate-300 peer-checked:text-emerald-400 peer-checked:font-bold">🌿 Rituels</div>
-            </label>
-          </div>
-        </div>
-
-        <!-- Date & Fréquence -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <div class="modal-body">
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Prochaine Échéance *</label>
-            <input type="date" id="deadline-date" required class="w-full bg-[#1c1c22] border border-white/[0.08] rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 transition">
+            <div class="modal-label">Titre de l'obligation *</div>
+            <input type="text" id="deadline-title" required class="modal-input" placeholder="ex: Loyer, Déclaration TVA, Netflix, Assurance auto...">
           </div>
+
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Fréquence de Boucle</label>
-            <select id="deadline-frequency" class="w-full bg-[#1c1c22] border border-white/[0.08] rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 transition">
-              <option value="monthly">Mensuelle (tous les mois)</option>
-              <option value="quarterly">Trimestrielle (tous les 3 mois)</option>
-              <option value="biannual">Semestrielle (tous les 6 mois)</option>
-              <option value="annual">Annuelle (1 fois par an)</option>
-              <option value="weekly">Hebdomadaire (chaque semaine)</option>
-              <option value="once">Ponctuelle (1 seule fois)</option>
-              <option value="custom">Personnalisée en jours</option>
-            </select>
+            <div class="modal-label">Catégorie</div>
+            <div class="category-pills" id="form-cat-pills">
+              <button type="button" class="cat-pill active" data-cat="finance" onclick="window.app.selectFormCat('finance')">Home (Finances)</button>
+              <button type="button" class="cat-pill" data-cat="subscription" onclick="window.app.selectFormCat('subscription')">Fun (Abonnements)</button>
+              <button type="button" class="cat-pill" data-cat="admin" onclick="window.app.selectFormCat('admin')">Work (Admin)</button>
+              <button type="button" class="cat-pill" data-cat="health" onclick="window.app.selectFormCat('health')">Rituels & Santé</button>
+            </div>
+            <input type="hidden" id="form-cat-val" value="finance">
           </div>
-        </div>
 
-        <div id="field-custom-days" class="hidden">
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Répéter tous les X jours</label>
-          <input type="number" id="deadline-custom-days" min="1" max="1000" placeholder="ex: 45" class="w-full bg-[#1c1c22] border border-white/[0.08] rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 transition">
-        </div>
-
-        <!-- Montant Optionnel -->
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Montant en Euros (€) (facultatif)</label>
-          <div class="relative">
-            <input type="number" id="deadline-amount" step="0.01" min="0" placeholder="ex: 45.00" class="w-full bg-[#1c1c22] border border-white/[0.08] rounded-lg pl-3 pr-8 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 transition">
-            <span class="absolute right-3 top-1.5 text-slate-400 font-semibold text-xs">€</span>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <div class="modal-label">Prochaine Échéance *</div>
+              <input type="date" id="deadline-date" required class="modal-input">
+            </div>
+            <div>
+              <div class="modal-label">Fréquence</div>
+              <select id="deadline-frequency" class="modal-input">
+                <option value="monthly">Mensuel</option>
+                <option value="quarterly">Trimestriel</option>
+                <option value="biannual">Semestriel</option>
+                <option value="annual">Annuel</option>
+                <option value="weekly">Hebdomadaire</option>
+                <option value="once">Ponctuel</option>
+              </select>
+            </div>
           </div>
-        </div>
 
-        <!-- Règles de Rappel Email -->
-        <div class="border-t border-white/[0.08] pt-3">
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-0.5">Règles d'anticipation par Email</label>
-          <p class="text-[11px] text-slate-400 mb-2">Quand voulez-vous recevoir l'email avec le bouton de validation en 1 clic ?</p>
-          
-          <div class="flex flex-wrap gap-1.5" id="rules-checkbox-group">
-            <label class="cursor-pointer">
-              <input type="checkbox" value="14" class="hidden peer">
-              <span class="px-2.5 py-1 text-xs rounded border border-white/[0.08] bg-[#1c1c22] text-slate-300 peer-checked:bg-emerald-500 peer-checked:text-white peer-checked:border-emerald-500 font-medium transition inline-block">J-14 (2 sem.)</span>
-            </label>
-            <label class="cursor-pointer">
-              <input type="checkbox" value="7" checked class="hidden peer">
-              <span class="px-2.5 py-1 text-xs rounded border border-white/[0.08] bg-[#1c1c22] text-slate-300 peer-checked:bg-emerald-500 peer-checked:text-white peer-checked:border-emerald-500 font-medium transition inline-block">J-7 (1 sem.)</span>
-            </label>
-            <label class="cursor-pointer">
-              <input type="checkbox" value="3" class="hidden peer">
-              <span class="px-2.5 py-1 text-xs rounded border border-white/[0.08] bg-[#1c1c22] text-slate-300 peer-checked:bg-emerald-500 peer-checked:text-white peer-checked:border-emerald-500 font-medium transition inline-block">J-3</span>
-            </label>
-            <label class="cursor-pointer">
-              <input type="checkbox" value="1" checked class="hidden peer">
-              <span class="px-2.5 py-1 text-xs rounded border border-white/[0.08] bg-[#1c1c22] text-slate-300 peer-checked:bg-emerald-500 peer-checked:text-white peer-checked:border-emerald-500 font-medium transition inline-block">J-1 (La veille)</span>
-            </label>
-            <label class="cursor-pointer">
-              <input type="checkbox" value="0" checked class="hidden peer">
-              <span class="px-2.5 py-1 text-xs rounded border border-white/[0.08] bg-[#1c1c22] text-slate-300 peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 font-medium transition inline-block">Jour J</span>
-            </label>
-          </div>
-        </div>
-
-        <!-- Destination & Lien -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Email Destinataire</label>
-            <input type="email" id="deadline-email" placeholder="votre@email.com" class="w-full bg-[#1c1c22] border border-white/[0.08] rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 transition">
+            <div class="modal-label">Montant en Euros (€) (facultatif)</div>
+            <input type="number" id="deadline-amount" step="0.01" min="0" placeholder="ex: 45.00" class="modal-input">
           </div>
+
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Lien Espace Client</label>
-            <input type="url" id="deadline-link" placeholder="https://..." class="w-full bg-[#1c1c22] border border-white/[0.08] rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 transition">
+            <div class="modal-label">Règles d'alerte email</div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;" id="rules-checkbox-group">
+              <label class="cat-pill"><input type="checkbox" value="14" style="margin-right: 4px;">J-14</label>
+              <label class="cat-pill active"><input type="checkbox" value="7" checked style="margin-right: 4px;">J-7</label>
+              <label class="cat-pill"><input type="checkbox" value="3" style="margin-right: 4px;">J-3</label>
+              <label class="cat-pill active"><input type="checkbox" value="1" checked style="margin-right: 4px;">J-1</label>
+              <label class="cat-pill active"><input type="checkbox" value="0" checked style="margin-right: 4px;">Jour J</label>
+            </div>
+          </div>
+
+          <div>
+            <div class="modal-label">Notes & Lien espace client</div>
+            <input type="url" id="deadline-link" placeholder="https://..." class="modal-input" style="margin-bottom: 6px;">
+            <textarea id="deadline-notes" rows="2" placeholder="Numéro fiscal, contrat, instructions..." class="modal-input"></textarea>
           </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Notes ou Identifiant</label>
-          <textarea id="deadline-notes" rows="2" placeholder="Numéro fiscal, contrat, instructions..." class="w-full bg-[#1c1c22] border border-white/[0.08] rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 transition"></textarea>
-        </div>
-
-        <!-- Footer Buttons -->
-        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-white/[0.08]">
-          <button type="button" id="btn-cancel-deadline" class="px-3.5 py-1.5 text-xs font-medium text-slate-400 hover:text-white bg-transparent hover:bg-white/[0.05] rounded-lg transition">
-            Annuler
-          </button>
-          <button type="submit" class="px-4 py-1.5 text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-400 rounded-lg shadow-lg shadow-emerald-500/20 transition">
-            Enregistrer
-          </button>
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-cancel" onclick="window.app.closeDeadlineModal()">Annuler</button>
+          <button type="submit" class="btn-modal-save">Enregistrer</button>
         </div>
       </form>
-
     </div>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MODAL: APERÇU EMAIL & SIMULATEUR RESEND                                   -->
+  <!-- MODAL: APERÇU EMAIL RESEND                                                -->
   <!-- ========================================================================= -->
-  <div id="modal-email-preview" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-    <div class="modal-backdrop fixed inset-0"></div>
-    <div class="relative bg-[#141418] border border-white/[0.12] rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-hidden shadow-2xl flex flex-col">
-      
-      <div class="p-4 border-b border-white/[0.08] flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-          <h3 class="text-sm font-bold text-white">Simulateur d'Alerte Email Transactionnelle</h3>
-        </div>
-        <button id="btn-close-email-modal" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/[0.05] transition">
-          <span id="icon-close-email-modal"></span>
-        </button>
+  <div class="modal-overlay" id="modal-email-preview">
+    <div class="modal-card" style="max-width: 620px; height: 85vh;">
+      <div class="modal-header">
+        <span>✉️ Simulateur d'Email 1 Clic</span>
+        <button class="modal-close" onclick="window.app.closeEmailModal()">✕</button>
       </div>
-
-      <div class="px-4 py-2.5 bg-[#0d0d0f] border-b border-white/[0.06] flex flex-wrap items-center justify-between gap-2.5">
-        <div class="flex items-center gap-2">
-          <label class="text-xs text-slate-400">Échéance :</label>
-          <select id="email-preview-select" class="bg-[#1c1c22] border border-white/[0.08] rounded px-2.5 py-1 text-xs text-white focus:outline-none"></select>
-        </div>
-        <button id="btn-trigger-test-email" class="px-3 py-1 text-xs font-semibold rounded bg-emerald-500 hover:bg-emerald-400 text-white transition flex items-center gap-1.5 shadow">
-          <span>✉️ Envoyer un test</span>
-        </button>
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+        <select id="email-preview-select" class="target-select" style="flex: 1;"></select>
+        <button class="btn-add" onclick="window.app.triggerTestEmail()">Envoyer test</button>
       </div>
-
-      <div class="flex-1 bg-black p-4 overflow-y-auto min-h-[420px]">
-        <iframe id="email-preview-iframe" class="w-full h-full min-h-[420px] rounded-lg border-0 bg-[#0b0f19]"></iframe>
+      <div style="flex: 1; min-height: 380px; border-radius: 12px; overflow: hidden; border: 1px solid var(--card-border);">
+        <iframe id="email-preview-iframe" style="width: 100%; height: 100%; border: none; background: #0b0f19;"></iframe>
       </div>
-
     </div>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MODAL: HISTORIQUE DES VALIDATIONS                                          -->
+  <!-- MODAL: SETTINGS                                                           -->
   <!-- ========================================================================= -->
-  <div id="modal-history" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-    <div class="modal-backdrop fixed inset-0"></div>
-    <div class="relative bg-[#141418] border border-white/[0.12] rounded-2xl w-full max-w-xl max-h-[85vh] overflow-y-auto shadow-2xl p-6 space-y-4">
-      
-      <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
-        <h3 class="text-base font-bold text-white flex items-center gap-2">
-          <span>🎯 Historique d'Accomplissement</span>
-        </h3>
-        <button id="btn-close-history-modal" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/[0.05] transition">
-          <span id="icon-close-history"></span>
-        </button>
+  <div class="modal-overlay" id="modal-settings">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span>⚙️ Paramètres Span Loop</span>
+        <button class="modal-close" onclick="window.app.closeSettingsModal()">✕</button>
       </div>
-
-      <div id="history-list" class="space-y-2"></div>
-
-    </div>
-  </div>
-
-  <!-- ========================================================================= -->
-  <!-- MODAL: PARAMÈTRES & EXPORT / IMPORT JSON                                  -->
-  <!-- ========================================================================= -->
-  <div id="modal-settings" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-    <div class="modal-backdrop fixed inset-0"></div>
-    <div class="relative bg-[#141418] border border-white/[0.12] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl p-6 space-y-5">
-      
-      <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
-        <h3 class="text-base font-bold text-white">Paramètres & Backend</h3>
-        <button id="btn-close-settings-modal" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/[0.05] transition">
-          <span id="icon-close-settings"></span>
-        </button>
-      </div>
-
-      <form id="form-settings" class="space-y-4">
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Email par défaut</label>
-          <input type="email" id="settings-email" placeholder="votre@email.com" class="w-full bg-[#1c1c22] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-white focus:outline-none">
-        </div>
-
-        <div class="border-t border-white/[0.08] pt-3">
-          <label class="text-xs font-semibold uppercase tracking-wider text-emerald-400 block mb-1">Supabase Backend (Optionnel)</label>
-          <div class="space-y-2">
-            <input type="text" id="settings-supabase-url" placeholder="https://votre-projet.supabase.co" class="w-full bg-[#1c1c22] border border-white/[0.08] rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none">
-            <input type="password" id="settings-supabase-key" placeholder="Supabase Anon Key" class="w-full bg-[#1c1c22] border border-white/[0.08] rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none">
+      <form onsubmit="event.preventDefault(); window.app.saveSettingsFromForm();">
+        <div class="modal-body">
+          <div>
+            <div class="modal-label">Email de notification par défaut</div>
+            <input type="email" id="settings-email" placeholder="votre@email.com" class="modal-input">
+          </div>
+          <div>
+            <div class="modal-label">Supabase URL (Optionnel)</div>
+            <input type="text" id="settings-supabase-url" placeholder="https://votre-projet.supabase.co" class="modal-input">
+          </div>
+          <div>
+            <div class="modal-label">Supabase Anon Key (Optionnel)</div>
+            <input type="password" id="settings-supabase-key" placeholder="eyJ..." class="modal-input">
+          </div>
+          <div>
+            <div class="modal-label">Resend API Key (Optionnel)</div>
+            <input type="password" id="settings-resend-key" placeholder="re_..." class="modal-input">
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 6px;">
+            <button type="button" class="btn-modal-cancel" onclick="window.app.exportDataAsJson()">📥 Exporter JSON</button>
+            <button type="button" class="btn-modal-cancel" style="color: var(--danger);" onclick="window.app.resetDemoData()">Réinitialiser Démo</button>
           </div>
         </div>
-
-        <div class="border-t border-white/[0.08] pt-3">
-          <label class="text-xs font-semibold uppercase tracking-wider text-sky-400 block mb-1">Resend API Key (Optionnel)</label>
-          <input type="password" id="settings-resend-key" placeholder="re_123456789..." class="w-full bg-[#1c1c22] border border-white/[0.08] rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none">
-        </div>
-
-        <!-- Export / Import JSON -->
-        <div class="border-t border-white/[0.08] pt-3 flex items-center justify-between gap-2">
-          <button type="button" id="btn-export-data" class="px-3 py-1.5 text-xs bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 rounded border border-white/[0.08] transition">
-            📥 Sauvegarder JSON
-          </button>
-          <button type="button" id="btn-reset-demo" class="text-xs text-rose-400 hover:text-rose-300 underline">
-            Réinitialiser démo
-          </button>
-        </div>
-
-        <div class="pt-3 border-t border-white/[0.08] flex justify-end">
-          <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-400 rounded-lg shadow transition">
-            Sauvegarder
-          </button>
+        <div class="modal-footer">
+          <button type="submit" class="btn-modal-save">Enregistrer</button>
         </div>
       </form>
-
     </div>
   </div>
 
-  <!-- Main JavaScript Controller -->
+  <!-- Main Controller -->
   <script type="module" src="js/app.js"></script>
 </body>
 </html>
