@@ -134,5 +134,52 @@ export const Recurrence = {
       case 'custom': return `Tous les ${customDays || 30} jours`;
       default: return frequency;
     }
+  },
+
+  // Sinking Funds / Matelas d'Épargne d'anticipation
+  calculateSinkingFunds(deadlines = []) {
+    const active = deadlines.filter(d => d.isActive && parseFloat(d.amount) > 0);
+    
+    // 1. Monthly ongoing fixed costs (loyer, netflix, box)
+    let monthlyFixed = 0;
+    // 2. Periodic items to amortize (assurance, impots, controle technique, vacances)
+    const amortizedItems = [];
+    let totalMonthlyProvision = 0;
+
+    active.forEach(item => {
+      const amt = parseFloat(item.amount) || 0;
+      const freq = item.frequency || 'monthly';
+      
+      if (['weekly', 'monthly'].includes(freq)) {
+        monthlyFixed += this.normalizeMonthlyAmount(amt, freq);
+      } else if (['quarterly', 'biannual', 'annual', 'custom'].includes(freq)) {
+        const days = Math.max(1, this.getDaysRemaining(item.nextDueDate));
+        const months = Math.max(1, Math.ceil(days / 30.5));
+        const monthlySave = Math.round(amt / months);
+        totalMonthlyProvision += monthlySave;
+
+        amortizedItems.push({
+          id: item.id,
+          title: item.title,
+          category: item.category,
+          totalAmount: amt,
+          nextDueDate: item.nextDueDate,
+          daysRemaining: days,
+          monthsRemaining: months,
+          monthlySave: monthlySave,
+          frequency: freq
+        });
+      }
+    });
+
+    // Sort amortized items by nearest due date
+    amortizedItems.sort((a, b) => a.daysRemaining - b.daysRemaining);
+
+    return {
+      monthlyFixed: Math.round(monthlyFixed),
+      totalMonthlyProvision: Math.round(totalMonthlyProvision),
+      totalSanctuary: Math.round(monthlyFixed + totalMonthlyProvision),
+      amortizedItems
+    };
   }
 };

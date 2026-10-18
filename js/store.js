@@ -329,11 +329,14 @@ export class Store {
       if (counts[h] !== undefined) counts[h]++;
     });
 
+    const sinkingFunds = Recurrence.calculateSinkingFunds(this.deadlines);
+
     return {
       monthlyBudget,
       consistency,
       totalCompleted: this.history.length,
-      counts
+      counts,
+      sinkingFunds
     };
   }
 }

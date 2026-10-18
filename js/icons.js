@@ -1,25 +1,23 @@
-// Span Track - Icon Library (SVG Helpers)
+// Span Loop - Icon Library (SVG Helpers)
 export const Icons = {
-  // Geometric Span "S" Logo with Emerald Gradient
+  // Official Geometric Span "S" Logo with Mint/Emerald Gradient and Loop Emblem
   logo: (size = 32) => `
-    <svg width="${size}" height="${size}" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" class="shrink-0">
+    <svg width="${size}" height="${size}" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" class="shrink-0" aria-label="Span Loop Logo">
+      <path d="M 30 2 H 2 L 12 13 L 20 8 H 8 L 12 4 H 26 Z" fill="url(#loopMintTop)" />
+      <path d="M 2 30 H 30 L 20 19 L 12 24 H 24 L 20 28 H 6 Z" fill="url(#loopMintBot)" />
+      <path d="M 16 10.5 C 13.0 10.5 10.5 13.0 10.5 16 C 10.5 19.0 13.0 21.5 16 21.5 C 19.0 21.5 21.5 19.0 21.5 16 C 21.5 13.0 19.0 10.5 16 10.5 Z" fill="#141418" />
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M 16 12 C 13.79 12 12 13.79 12 16 C 12 18.21 13.79 20 16 20 C 18.21 20 20 18.21 20 16 C 20 13.79 18.21 12 16 12 Z M 16 14 C 14.9 14 14 14.9 14 16 C 14 17.1 14.9 18 16 18 C 17.1 18 18 17.1 18 16 C 18 14.9 17.1 14 16 14 Z" fill="#ffffff" />
+      <circle cx="16" cy="12.5" r="1.1" fill="#34d399" />
       <defs>
-        <linearGradient id="spanMintGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#34d399"/>
-          <stop offset="50%" stop-color="#10b981"/>
-          <stop offset="100%" stop-color="#059669"/>
+        <linearGradient id="loopMintTop" x1="30" y1="2" x2="2" y2="14" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#10b981" />
+          <stop offset="1" stop-color="#34d399" />
         </linearGradient>
-        <filter id="spanGlow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#10b981" flood-opacity="0.35"/>
-        </filter>
+        <linearGradient id="loopMintBot" x1="2" y1="18" x2="30" y2="30" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#059669" />
+          <stop offset="1" stop-color="#10b981" />
+        </linearGradient>
       </defs>
-      <!-- Geometric Diamond / Polygon Backing -->
-      <rect x="4" y="4" width="40" height="40" rx="10" fill="#0b1320" stroke="#1f2d3d" stroke-width="1.5" />
-      <!-- Stylized Geometric "S" -->
-      <path d="M32 14H20C16.6863 14 14 16.6863 14 20C14 23.3137 16.6863 26 20 26H28C31.3137 26 34 28.6863 34 32C34 35.3137 31.3137 38 28 38H16" 
-            stroke="url(#spanMintGrad)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#spanGlow)"/>
-      <circle cx="32" cy="14" r="2.5" fill="#34d399"/>
-      <circle cx="16" cy="38" r="2.5" fill="#059669"/>
     </svg>
   `,
 

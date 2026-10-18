@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Geometric Span S Chassis (Top Blade) -->
+  <path d="M 30 2 H 2 L 12 13 L 20 8 H 8 L 12 4 H 26 Z" fill="url(#loopMintTop)" />
+  <!-- Geometric Span S Chassis (Bottom Blade) -->
+  <path d="M 2 30 H 30 L 20 19 L 12 24 H 24 L 20 28 H 6 Z" fill="url(#loopMintBot)" />
+  
+  <!-- Central Loop Emblem (Harmonized with Focus circle & Plan milestone) -->
+  <g id="centerLoopEmblem">
+    <!-- Breathing dark halo backdrop -->
+    <path d="M 16 10.5 C 13.0 10.5 10.5 13.0 10.5 16 C 10.5 19.0 13.0 21.5 16 21.5 C 19.0 21.5 21.5 19.0 21.5 16 C 21.5 13.0 19.0 10.5 16 10.5 Z" fill="#141418" />
+    <!-- White Loop Ring -->
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M 16 12 C 13.79 12 12 13.79 12 16 C 12 18.21 13.79 20 16 20 C 18.21 20 20 18.21 20 16 C 20 13.79 18.21 12 16 12 Z M 16 14 C 14.9 14 14 14.9 14 16 C 14 17.1 14.9 18 16 18 C 17.1 18 18 17.1 18 16 C 18 14.9 17.1 14 16 14 Z" fill="#ffffff" />
+    <circle cx="16" cy="12.5" r="1.1" fill="#34d399" />
+  </g>
+
+  <defs>
+    <linearGradient id="loopMintTop" x1="30" y1="2" x2="2" y2="14" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#10b981" />
+      <stop offset="1" stop-color="#34d399" />
+    </linearGradient>
+    <linearGradient id="loopMintBot" x1="2" y1="18" x2="30" y2="30" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#059669" />
+      <stop offset="1" stop-color="#10b981" />
+    </linearGradient>
+  </defs>
+</svg>
