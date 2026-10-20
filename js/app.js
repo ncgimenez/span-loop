@@ -182,32 +182,67 @@ class App {
 
   // Render main state
   render() {
-    this.renderHeaderGoal();
+    this.renderHeaderMetrics();
     this.renderCategoryCounts();
+    this.renderSideWidgets();
 
     if (this.currentView === 'radar') {
+      const gridEl = document.getElementById('cockpitGrid');
+      if (gridEl) gridEl.style.display = 'grid';
+      const sinkingEl = document.getElementById('view-sinking');
+      if (sinkingEl) sinkingEl.style.display = 'none';
+      const historyEl = document.getElementById('view-history');
+      if (historyEl) historyEl.style.display = 'none';
+
       this.renderRadar();
     } else if (this.currentView === 'sinking') {
+      const gridEl = document.getElementById('cockpitGrid');
+      if (gridEl) gridEl.style.display = 'none';
+      const sinkingEl = document.getElementById('view-sinking');
+      if (sinkingEl) sinkingEl.style.display = 'flex';
+      const historyEl = document.getElementById('view-history');
+      if (historyEl) historyEl.style.display = 'none';
+
       this.renderSinkingPanel();
     } else if (this.currentView === 'history') {
+      const gridEl = document.getElementById('cockpitGrid');
+      if (gridEl) gridEl.style.display = 'none';
+      const sinkingEl = document.getElementById('view-sinking');
+      if (sinkingEl) sinkingEl.style.display = 'none';
+      const historyEl = document.getElementById('view-history');
+      if (historyEl) historyEl.style.display = 'flex';
+
       this.renderHistoryPanel();
     }
   }
 
-  renderHeaderGoal() {
+  renderHeaderMetrics() {
     const stats = this.store.getStats();
     const sinking = stats.sinkingFunds;
-    
-    // Update goal tracker bar below header
-    const pill = document.getElementById('sinkingGoalPercent');
-    if (pill) {
-      pill.textContent = `+${sinking.totalMonthlyProvision.toLocaleString('fr-FR')} € / mois`;
+    const active = this.store.deadlines.filter(d => d.isActive);
+
+    let urgentCount = 0;
+    let monthCount = 0;
+    active.forEach(item => {
+      const h = Recurrence.getHorizon(item.nextDueDate);
+      if (h === 'overdue' || h === 'urgent') urgentCount++;
+      else if (h === 'this_week' || h === 'this_month') monthCount++;
+    });
+
+    const urgentBadge = document.getElementById('statUrgentBadge');
+    if (urgentBadge) {
+      urgentBadge.textContent = `⚡ ${urgentCount} urgente${urgentCount > 1 ? 's' : ''}`;
+      urgentBadge.style.display = urgentCount > 0 ? 'inline-flex' : 'none';
     }
 
-    const bar = document.getElementById('sinkingGoalBar');
-    if (bar) {
-      const targetPercent = Math.min(100, Math.max(15, (sinking.totalMonthlyProvision / (sinking.totalSanctuary || 1)) * 100));
-      bar.style.width = `${targetPercent}%`;
+    const monthBadge = document.getElementById('statMonthBadge');
+    if (monthBadge) {
+      monthBadge.textContent = `📅 ${monthCount} ce mois`;
+    }
+
+    const budgetBadge = document.getElementById('statBudgetBadge');
+    if (budgetBadge) {
+      budgetBadge.textContent = `🛡️ +${sinking.totalMonthlyProvision.toLocaleString('fr-FR')} € / m`;
     }
   }
 
@@ -219,11 +254,11 @@ class App {
     const countAdmin = active.filter(d => d.category === 'admin').length;
     const countHealth = active.filter(d => d.category === 'health').length;
 
-    document.getElementById('catCountAll').textContent = countAll;
-    document.getElementById('catCountFinance').textContent = countFinance;
-    document.getElementById('catCountSub').textContent = countSub;
-    document.getElementById('catCountAdmin').textContent = countAdmin;
-    document.getElementById('catCountHealth').textContent = countHealth;
+    const elAll = document.getElementById('catCountAll'); if (elAll) elAll.textContent = countAll;
+    const elFin = document.getElementById('catCountFinance'); if (elFin) elFin.textContent = countFinance;
+    const elSub = document.getElementById('catCountSub'); if (elSub) elSub.textContent = countSub;
+    const elAdm = document.getElementById('catCountAdmin'); if (elAdm) elAdm.textContent = countAdmin;
+    const elHea = document.getElementById('catCountHealth'); if (elHea) elHea.textContent = countHealth;
   }
 
   renderRadar() {
@@ -235,15 +270,13 @@ class App {
 
     const groups = {
       urgent: [],
-      this_week: [],
       this_month: [],
       later: []
     };
 
     active.forEach(item => {
       const h = Recurrence.getHorizon(item.nextDueDate);
-      if (h === 'overdue' || h === 'urgent') groups.urgent.push(item);
-      else if (h === 'this_week') groups.this_week.push(item);
+      if (h === 'overdue' || h === 'urgent' || h === 'this_week') groups.urgent.push(item);
       else if (h === 'this_month') groups.this_month.push(item);
       else groups.later.push(item);
     });
@@ -253,7 +286,6 @@ class App {
     }
 
     this.renderHorizonList('grid-urgent', 'badge-count-urgent', groups.urgent);
-    this.renderHorizonList('grid-this-week', 'badge-count-this-week', groups.this_week);
     this.renderHorizonList('grid-this-month', 'badge-count-this-month', groups.this_month);
     this.renderHorizonList('grid-later', 'badge-count-later', groups.later);
   }
@@ -267,34 +299,33 @@ class App {
 
     if (items.length === 0) {
       container.innerHTML = `
-        <div style="padding: 10px 14px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px dashed var(--card-border); color: var(--text-muted); font-size: 12px;">
+        <div style="padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px dashed var(--card-border); color: var(--text-muted); font-size: 12.5px;">
           Rien dans cet horizon. Tout est sous contrôle.
         </div>
       `;
       return;
     }
 
-    container.innerHTML = items.map(item => this.createTaskItemHtml(item)).join('');
+    container.innerHTML = items.map(item => this.createTaskCardHtml(item)).join('');
 
     // Attach click events
     items.forEach(item => {
       // 1-Click Validation Checkbox
       document.getElementById(`btn-check-${item.id}`)?.addEventListener('click', (e) => {
         e.stopPropagation();
-        const result = this.store.validateDeadline(item.id);
-        sound.playSuccess();
-        shootConfetti();
-        if (result.nextDate) {
-          this.showToast(`✓ "${item.title}" validé ! Reprogrammé au ${Recurrence.formatDisplayDate(result.nextDate)}`);
-        } else {
-          this.showToast(`✓ "${item.title}" accompli et archivé !`);
-        }
+        this.validateDeadline(item.id);
       });
 
-      // Email preview
-      document.getElementById(`btn-mail-${item.id}`)?.addEventListener('click', (e) => {
+      // Bridge: Send to Plan
+      document.getElementById(`btn-bridge-plan-${item.id}`)?.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.openEmailModal(item.id);
+        this.sendToPlan(item.id);
+      });
+
+      // Bridge: Send to Focus
+      document.getElementById(`btn-bridge-focus-${item.id}`)?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.sendToFocus(item.id);
       });
 
       // Edit item
@@ -314,59 +345,307 @@ class App {
     });
   }
 
-  createTaskItemHtml(item) {
+  createTaskCardHtml(item) {
     const days = Recurrence.getDaysRemaining(item.nextDueDate);
     const humanDays = Recurrence.formatHumanDays(item.nextDueDate);
     const formattedDate = Recurrence.formatDisplayDate(item.nextDueDate);
     const isUrgent = days <= 2;
     const isWeek = days > 2 && days <= 7;
 
-    const rules = item.reminderRules || item.reminder_rules || [7, 1, 0];
-    const rulesHtml = rules.map(r => `<span class="meta-rule-pill">J-${r}</span>`).join(' ');
+    const catIcons = {
+      finance: '💶',
+      subscription: '🍿',
+      health: '🩺',
+      admin: '📋'
+    };
+    const catLabels = {
+      finance: 'Factures',
+      subscription: 'Abonnements',
+      health: 'Santé',
+      admin: 'Admin'
+    };
+
+    const icon = catIcons[item.category] || '🔁';
+    const catLabel = catLabels[item.category] || 'Loop';
+    const countdownClass = isUrgent ? 'urgent' : (isWeek ? 'week' : '');
 
     return `
-      <div class="task-item-wrapper">
-        <div class="task-item ${isUrgent ? 'is-urgent-item' : ''}" data-cat="${item.category}">
-          
-          <!-- 1-Click Circle Checkbox -->
-          <button class="loop-check-btn" id="btn-check-${item.id}" title="Valider en 1 clic (reprogramme le cycle)">
-            ✓
-          </button>
-
-          <!-- Main Info -->
-          <div class="task-main-info" onclick="window.app.openDeadlineModalById('${item.id}')">
-            <div class="task-title-row">
-              <span class="task-title-text">${item.title}</span>
-              ${isUrgent ? `<span class="live-pulse-badge">URGENT</span>` : ''}
-              ${item.link ? `
-                <a href="${item.link}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="color: var(--text-muted); font-size: 11px;" title="Portail client">↗</a>
-              ` : ''}
+      <div class="task-card ${isUrgent ? 'urgent-glow' : ''}" data-cat="${item.category}">
+        
+        <!-- Left Group: Category Badge + Title & Due Date -->
+        <div class="card-left-group" onclick="window.app.openDeadlineModalById('${item.id}')">
+          <div class="card-cat-badge ${item.category}" title="${catLabel}">
+            ${icon}
+          </div>
+          <div class="card-text-block">
+            <div class="card-title-row">
+              <span class="card-title">${item.title}</span>
+              ${item.link ? `<a href="${item.link}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="card-ext-link" title="Portail client">↗</a>` : ''}
             </div>
-
-            <div class="task-meta-sub">
-              <span class="meta-due-badge ${isUrgent ? 'urgent' : isWeek ? 'week' : ''}">${humanDays}</span>
-              <span>•</span>
-              <span>${formattedDate}</span>
-              <span>•</span>
-              <div style="display: inline-flex; gap: 3px;">${rulesHtml}</div>
+            <div class="card-sub-row">
+              <span class="card-countdown-badge ${countdownClass}">${humanDays}</span>
+              <span class="card-dot">•</span>
+              <span class="card-date">${formattedDate}</span>
+              <span class="card-dot">•</span>
+              <span class="card-cat-name">${catLabel}</span>
             </div>
           </div>
-
-          <!-- Right Meta: Amount, Frequency, Actions -->
-          <div class="task-right-meta">
-            ${item.amount ? `<span class="task-amount-pill">${item.amount} €</span>` : ''}
-            <span class="task-freq-tag">${Recurrence.frequencyLabel(item.frequency)}</span>
-
-            <div class="task-actions-group">
-              <button class="btn-item-action" id="btn-mail-${item.id}" title="Aperçu email">✉️</button>
-              <button class="btn-item-action" id="btn-edit-${item.id}" title="Modifier">✏️</button>
-              <button class="btn-item-action delete" id="btn-del-${item.id}" title="Supprimer">🗑️</button>
-            </div>
-          </div>
-
         </div>
+
+        <!-- Right Group: Amount, Frequency, Bridges & Validation -->
+        <div class="card-right-group">
+          <div class="card-price-block">
+            ${item.amount ? `<span class="card-amount">${item.amount} €</span>` : ''}
+            <span class="card-frequency">${Recurrence.frequencyLabel(item.frequency)}</span>
+          </div>
+
+          <div class="card-actions-row">
+            <button type="button" class="bridge-btn plan-btn" id="btn-bridge-plan-${item.id}" title="Planifier dans Span Plan (avec tourbillon Loop)">
+              <span>📅</span>
+              <span class="bridge-btn-label">Plan</span>
+            </button>
+            <button type="button" class="bridge-btn focus-btn" id="btn-bridge-focus-${item.id}" title="Régler tout de suite dans Span Focus">
+              <span>⚡</span>
+              <span class="bridge-btn-label">Focus</span>
+            </button>
+            <button type="button" class="loop-validate-btn" id="btn-check-${item.id}" title="Valider en 1 clic (reprogramme le cycle)">
+              <span>✓</span>
+              <span>Fait</span>
+            </button>
+            <button type="button" class="btn-more-options" id="btn-edit-${item.id}" title="Modifier">✏️</button>
+            <button type="button" class="btn-more-options delete" id="btn-del-${item.id}" title="Supprimer">🗑️</button>
+          </div>
+        </div>
+
       </div>
     `;
+  }
+
+  // 1-Click Validation action with audio & celebration
+  validateDeadline(deadlineId) {
+    const result = this.store.validateDeadline(deadlineId);
+    if (!result) return;
+
+    sound.playSuccess();
+    shootConfetti();
+
+    if (result.nextDate) {
+      this.showToast(`✓ "${result.item.title}" validé ! Reprogrammé au ${Recurrence.formatDisplayDate(result.nextDate)}`);
+    } else {
+      this.showToast(`✓ "${result.item.title}" accompli et archivé !`);
+    }
+  }
+
+  // Bridge: Send to Span Plan
+  sendToPlan(deadlineId) {
+    const item = this.store.deadlines.find(d => d.id === deadlineId);
+    if (!item) return;
+
+    sound.playPop();
+
+    let planCategory = 'life';
+    if (item.category === 'admin') planCategory = 'work';
+    else if (item.category === 'subscription') planCategory = 'fun';
+    else planCategory = 'life';
+
+    const planTitle = `🔁 ${item.title}${item.amount ? ` (${item.amount}€)` : ''}`;
+    const newPlanItem = {
+      id: 'plan_loop_' + item.id + '_' + Date.now(),
+      title: planTitle,
+      date: item.nextDueDate,
+      startTime: '09:00',
+      duration: 30,
+      category: planCategory,
+      loopId: item.id,
+      isLoop: true,
+      completed: false
+    };
+
+    // Save to localStorage for Span Plan
+    try {
+      const planTasks = JSON.parse(localStorage.getItem('span_plan_tasks') || '[]');
+      const existingIdx = planTasks.findIndex(p => p.loopId === item.id && p.date === item.nextDueDate);
+      if (existingIdx !== -1) planTasks[existingIdx] = newPlanItem;
+      else planTasks.push(newPlanItem);
+      localStorage.setItem('span_plan_tasks', JSON.stringify(planTasks));
+    } catch (e) {
+      console.warn('LocalStorage Plan write warning:', e);
+    }
+
+    // Push to Supabase if connected
+    if (this.sync && this.sync.supabaseClient) {
+      const syncUserId = this.sync.getSyncUserId();
+      this.sync.supabaseClient.from('user_state').select('tasks').eq('id', syncUserId).maybeSingle()
+        .then(({ data }) => {
+          if (data && data.tasks) {
+            const currentPlanItems = Array.isArray(data.tasks.plan_items) ? data.tasks.plan_items : [];
+            const idx = currentPlanItems.findIndex(p => p.loopId === item.id && p.date === item.nextDueDate);
+            if (idx !== -1) currentPlanItems[idx] = newPlanItem;
+            else currentPlanItems.push(newPlanItem);
+            return this.sync.supabaseClient.from('user_state').upsert({
+              id: syncUserId,
+              tasks: { ...data.tasks, plan_items: currentPlanItems },
+              updated_at: new Date().toISOString()
+            });
+          }
+        }).catch(err => console.warn('Supabase Plan push error:', err));
+    }
+
+    const host = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+      ? 'http://localhost:8081/' 
+      : '/span-plan/';
+
+    this.showToast(`
+      <span>✓ <strong>${item.title}</strong> planifié pour le ${Recurrence.formatDisplayDate(item.nextDueDate)} !</span>
+      <a href="${host}" target="_blank" style="color:var(--color-loop);text-decoration:underline;margin-left:8px;font-weight:700;">Ouvrir Plan ↗</a>
+    `);
+  }
+
+  // Bridge: Send to Span Focus
+  sendToFocus(deadlineId) {
+    const item = this.store.deadlines.find(d => d.id === deadlineId);
+    if (!item) return;
+
+    sound.playPop();
+
+    let focusCat = 'Home';
+    if (item.category === 'admin') focusCat = 'Work';
+    else if (item.category === 'subscription') focusCat = 'Fun';
+    else focusCat = 'Home';
+
+    const focusTitle = `🔁 ${item.title}${item.amount ? ` (${item.amount}€)` : ''}`;
+    const newFocusItem = {
+      id: 't_loop_' + item.id + '_' + Date.now(),
+      title: focusTitle,
+      category: focusCat,
+      estimate: 1,
+      duration: 30,
+      completed: false,
+      isFavorite: true,
+      loopId: item.id,
+      isLoop: true,
+      createdAt: new Date().toISOString()
+    };
+
+    // Save to localStorage for Span Focus
+    try {
+      const focusTasks = JSON.parse(localStorage.getItem('span_tasks') || '[]');
+      focusTasks.unshift(newFocusItem);
+      localStorage.setItem('span_tasks', JSON.stringify(focusTasks));
+      localStorage.setItem('span_active_task', JSON.stringify(newFocusItem));
+    } catch (e) {
+      console.warn('LocalStorage Focus write warning:', e);
+    }
+
+    // Push to Supabase if connected
+    if (this.sync && this.sync.supabaseClient) {
+      const syncUserId = this.sync.getSyncUserId();
+      this.sync.supabaseClient.from('user_state').select('tasks').eq('id', syncUserId).maybeSingle()
+        .then(({ data }) => {
+          if (data && data.tasks) {
+            const currentItems = Array.isArray(data.tasks.items) ? data.tasks.items : [];
+            currentItems.unshift(newFocusItem);
+            return this.sync.supabaseClient.from('user_state').upsert({
+              id: syncUserId,
+              tasks: { ...data.tasks, items: currentItems },
+              timer_state: { activeTask: newFocusItem },
+              updated_at: new Date().toISOString()
+            });
+          }
+        }).catch(err => console.warn('Supabase Focus push error:', err));
+    }
+
+    const host = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+      ? 'http://localhost:8080/' 
+      : '/span-focus/';
+
+    this.showToast(`
+      <span>⚡ <strong>${item.title}</strong> envoyé dans Span Focus !</span>
+      <a href="${host}" target="_blank" style="color:var(--color-loop);text-decoration:underline;margin-left:8px;font-weight:700;">Démarrer Focus ↗</a>
+    `);
+  }
+
+  // Sidebar companion widgets rendering
+  renderSideWidgets() {
+    const stats = this.store.getStats();
+    const sinking = stats.sinkingFunds;
+
+    const sideSinkingEl = document.getElementById('sideSinkingAmount');
+    if (sideSinkingEl) {
+      sideSinkingEl.textContent = `+${sinking.totalMonthlyProvision.toLocaleString('fr-FR')} €/m`;
+    }
+
+    const sideTotalEl = document.getElementById('sideMonthlyTotal');
+    if (sideTotalEl) {
+      sideTotalEl.textContent = `${stats.monthlyBudget.toLocaleString('fr-FR')} € / mois`;
+    }
+
+    const miniListEl = document.getElementById('sideSinkingMiniList');
+    if (miniListEl) {
+      if (sinking.amortizedItems.length === 0) {
+        miniListEl.innerHTML = `<div style="font-size: 11.5px; color: var(--text-muted); padding: 4px 0;">Aucune charge annuelle à amortir.</div>`;
+      } else {
+        miniListEl.innerHTML = sinking.amortizedItems.slice(0, 3).map(item => `
+          <div class="sinking-mini-item">
+            <span style="font-weight: 500; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 170px;">${item.title}</span>
+            <span style="font-weight: 700; color: var(--color-loop-mint);">+${item.monthlyShare} €/m</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    const barsEl = document.getElementById('sideCategoryBars');
+    if (barsEl) {
+      const active = this.store.deadlines.filter(d => d.isActive);
+      const cats = [
+        { key: 'finance', label: '💶 Factures', color: '#10b981' },
+        { key: 'subscription', label: '🍿 Abonnements', color: '#fb7185' },
+        { key: 'health', label: '🩺 Santé', color: '#34d399' },
+        { key: 'admin', label: '📋 Admin', color: '#818cf8' }
+      ];
+
+      const catTotals = {};
+      let totalBudget = 0;
+      cats.forEach(c => {
+        const sum = active.filter(d => d.category === c.key).reduce((acc, curr) => {
+          return acc + Recurrence.normalizeMonthlyAmount(curr.amount, curr.frequency);
+        }, 0);
+        catTotals[c.key] = sum;
+        totalBudget += sum;
+      });
+
+      barsEl.innerHTML = cats.map(c => {
+        const amount = catTotals[c.key] || 0;
+        const pct = totalBudget > 0 ? Math.round((amount / totalBudget) * 100) : 0;
+        return `
+          <div class="cat-bar-row">
+            <div class="cat-bar-header">
+              <span>${c.label}</span>
+              <span>${amount.toLocaleString('fr-FR')} € (${pct}%)</span>
+            </div>
+            <div class="cat-bar-track">
+              <div class="cat-bar-fill" style="width: ${pct}%; background: ${c.color};"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  togglePresetsModal() {
+    sound.playPop();
+    const modal = document.getElementById('modal-presets');
+    if (modal) modal.classList.toggle('active');
+  }
+
+  toggleLaterCollapse() {
+    sound.playPop();
+    const grid = document.getElementById('grid-later');
+    const label = document.getElementById('laterToggleLabel');
+    if (!grid) return;
+    const isHidden = grid.style.display === 'none';
+    grid.style.display = isHidden ? 'flex' : 'none';
+    if (label) label.textContent = isHidden ? 'Masquer ▴' : 'Afficher ▾';
   }
 
   // Sinking Funds View

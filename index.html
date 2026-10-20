@@ -11,8 +11,8 @@
   <meta name="apple-mobile-web-app-title" content="Loop">
 
   <link rel="icon" type="image/svg+xml" href="span-logo.svg">
-  <link rel="stylesheet" href="style.css?v=1.0.2">
-  <link rel="stylesheet" href="css/styles.css?v=1.0.2">
+  <link rel="stylesheet" href="style.css?v=1.0.3">
+  <link rel="stylesheet" href="css/styles.css?v=1.0.3">
 </head>
 <body>
 
@@ -48,8 +48,14 @@
         <span class="brand-app" id="headerTitle">Loop</span>
       </div>
       
+      <div class="header-metrics-pill" onclick="window.app.setView('sinking')" title="Cliquer pour voir le détail du Matelas">
+        <span class="metric-chip urgent" id="statUrgentBadge">⚡ 0 urgente</span>
+        <span class="metric-chip" id="statMonthBadge">📅 0 ce mois</span>
+        <span class="metric-chip highlight" id="statBudgetBadge">🛡️ +0 € / mois</span>
+      </div>
+
       <div class="header-actions">
-        <button class="icon-btn btn-track-desktop" id="btnHeaderSinking" onclick="window.app.setView('sinking')" title="Voir le Matelas d'Épargne">🛡️ Matelas</button>
+        <button class="icon-btn" id="btnPresets" onclick="window.app.togglePresetsModal()" title="Modèles rapides (Loyer, Netflix, TVA...)">✨ Modèles</button>
         <button class="icon-btn" id="soundBtn" onclick="window.app.toggleSound()" title="Retour sonore Web Audio">
           <span id="soundIcon">🎧</span>
         </button>
@@ -60,134 +66,151 @@
       </div>
     </header>
 
-    <!-- 2. SIGNATURE SPAN GOAL TRACKER (MATELAS DE SÉRÉNITÉ / SINKING FUND) -->
-    <div class="goal-tracker" onclick="window.app.setView('sinking')" title="Cliquer pour voir et ajuster le provisionnement mensuel">
-      <div class="goal-meta">
-        <span>🛡️ Matelas de Sérénité (Sinking Fund)</span>
-        <span class="goal-amount-badge" id="sinkingGoalPercent">+0 € / mois</span>
-      </div>
-      <div class="progress-bar-bg">
-        <div class="progress-bar-fill" id="sinkingGoalBar"></div>
-      </div>
-    </div>
-
-    <!-- 3. QUICK OBLIGATION INPUT BAR (MATCHING SPAN FOCUS TASK INPUT) -->
-    <div class="task-input-container">
-      <input type="text" class="task-input" id="quickInputTitle" placeholder="Ajouter une obligation récurrente... (Appuyez sur Entrée)" onkeydown="if(event.key==='Enter') window.app.quickAddFromBar()">
-      <input type="number" id="quickInputAmount" placeholder="Montant €" min="0" step="1" class="target-select" style="width: 100px;">
-      <select class="target-select" id="quickInputFreq" title="Fréquence de récurrence">
-        <option value="monthly" selected>Mensuel</option>
-        <option value="quarterly">Trimestriel</option>
-        <option value="biannual">Semestriel</option>
-        <option value="annual">Annuel</option>
-        <option value="once">Ponctuel</option>
-      </select>
-      <select class="category-select" id="quickInputCat" title="Catégorie">
-        <option value="finance">Home (Finances)</option>
-        <option value="subscription">Fun (Abonnements)</option>
-        <option value="admin">Work (Admin & Légal)</option>
-        <option value="health">Rituels & Santé</option>
-      </select>
-      <button class="btn-add" onclick="window.app.quickAddFromBar()">Add</button>
-    </div>
-
-    <!-- 4. ONE-TAP PRESETS BAR -->
-    <div class="presets-bar">
-      <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-right: 2px;">Modèles :</span>
-      <button class="preset-chip" onclick="window.app.applyPreset('rent')"><span>🏢</span> Loyer</button>
-      <button class="preset-chip" onclick="window.app.applyPreset('netflix')"><span>🍿</span> Netflix 14.99€</button>
-      <button class="preset-chip" onclick="window.app.applyPreset('spotify')"><span>🎵</span> Spotify 10.99€</button>
-      <button class="preset-chip" onclick="window.app.applyPreset('tax')"><span>💼</span> Déclaration TVA</button>
-      <button class="preset-chip" onclick="window.app.applyPreset('car')"><span>🚗</span> Assurance Auto 600€/an</button>
-      <button class="preset-chip" onclick="window.app.applyPreset('dentist')"><span>🦷</span> Dentiste Annuel</button>
-      <button class="preset-chip" onclick="window.app.applyPreset('trial')"><span>⏳</span> Essai Gratuit</button>
-    </div>
-
-    <!-- 5. UNIFIED TOOLBAR: VIEW SWITCHER + TRI-CATEGORY FILTERS -->
-    <div class="tasks-toolbar-unified">
-      <div class="mode-switch">
-        <button class="mode-btn active" id="tabRadar" onclick="window.app.setView('radar')">Radar des Boucles</button>
-        <button class="mode-btn" id="tabSinking" onclick="window.app.setView('sinking')">🛡️ Matelas d'Épargne</button>
-        <button class="mode-btn" id="tabHistory" onclick="window.app.setView('history')">🎯 Historique</button>
+    <!-- 2. TOP NAV: CATEGORY FILTERS & VIEW SWITCHER -->
+    <div class="top-nav-bar">
+      <div class="category-filters-row" id="quickCategoryFilters">
+        <button type="button" class="cat-pill-filter active" data-cat="all" onclick="window.app.setCategoryFilter('all')">
+          <span>Toutes</span> <span class="cat-count-pill" id="catCountAll">0</span>
+        </button>
+        <button type="button" class="cat-pill-filter" data-cat="finance" onclick="window.app.setCategoryFilter('finance')">
+          <span>💶 Factures</span> <span class="cat-count-pill" id="catCountFinance">0</span>
+        </button>
+        <button type="button" class="cat-pill-filter" data-cat="subscription" onclick="window.app.setCategoryFilter('subscription')">
+          <span>🍿 Abonnements</span> <span class="cat-count-pill" id="catCountSub">0</span>
+        </button>
+        <button type="button" class="cat-pill-filter" data-cat="health" onclick="window.app.setCategoryFilter('health')">
+          <span>🩺 Santé</span> <span class="cat-count-pill" id="catCountHealth">0</span>
+        </button>
+        <button type="button" class="cat-pill-filter" data-cat="admin" onclick="window.app.setCategoryFilter('admin')">
+          <span>📋 Admin</span> <span class="cat-count-pill" id="catCountAdmin">0</span>
+        </button>
       </div>
 
-      <div class="quick-category-filters" id="quickCategoryFilters">
-        <button type="button" class="cat-filter-btn active" data-cat="all" onclick="window.app.setCategoryFilter('all')">
-          <span>All</span> <span class="cat-count-pill" id="catCountAll">0</span>
-        </button>
-        <button type="button" class="cat-filter-btn" data-cat="finance" onclick="window.app.setCategoryFilter('finance')">
-          <span class="cat-dot-indicator dot-home"></span>
-          <span>Finances</span> <span class="cat-count-pill" id="catCountFinance">0</span>
-        </button>
-        <button type="button" class="cat-filter-btn" data-cat="subscription" onclick="window.app.setCategoryFilter('subscription')">
-          <span class="cat-dot-indicator dot-fun"></span>
-          <span>Abonnements</span> <span class="cat-count-pill" id="catCountSub">0</span>
-        </button>
-        <button type="button" class="cat-filter-btn" data-cat="admin" onclick="window.app.setCategoryFilter('admin')">
-          <span class="cat-dot-indicator dot-work"></span>
-          <span>Admin</span> <span class="cat-count-pill" id="catCountAdmin">0</span>
-        </button>
-        <button type="button" class="cat-filter-btn" data-cat="health" onclick="window.app.setCategoryFilter('health')">
-          <span class="cat-dot-indicator dot-health"></span>
-          <span>Rituels</span> <span class="cat-count-pill" id="catCountHealth">0</span>
-        </button>
+      <div class="view-switch-pills">
+        <button class="view-pill active" id="tabRadar" onclick="window.app.setView('radar')">Radar</button>
+        <button class="view-pill" id="tabSinking" onclick="window.app.setView('sinking')">🛡️ Matelas</button>
+        <button class="view-pill" id="tabHistory" onclick="window.app.setView('history')">Historique</button>
       </div>
     </div>
 
-    <!-- 6. VIEW 1: RADAR DES HORIZONS (4 TEMPORAL HORIZONS) -->
-    <div id="view-radar" class="horizons-wrap">
-      
-      <!-- Horizon 1: Urgences & En retard (< 48h) -->
-      <section class="horizon-section" id="section-urgent">
-        <div class="horizon-header">
-          <div class="horizon-title-group">
-            <span class="horizon-dot dot-urgent"></span>
-            <span class="horizon-title urgent">En retard & Moins de 48h</span>
-            <span class="horizon-count" id="badge-count-urgent">0</span>
-          </div>
-          <span style="font-size: 11px; color: var(--text-muted);">Action requise</span>
-        </div>
-        <div class="task-list-loop" id="grid-urgent"></div>
-      </section>
+    <!-- 3. SLEEK COMMAND BAR (QUICK ADD) -->
+    <div class="command-bar-container">
+      <div class="command-bar">
+        <span class="command-bar-icon">🔁</span>
+        <input type="text" class="command-bar-input" id="quickInputTitle" placeholder="Ajouter une boucle... (ex: Loyer 850€, Netflix 14.99€, Dentiste...)" onkeydown="if(event.key==='Enter') window.app.quickAddFromBar()">
+        <input type="number" id="quickInputAmount" placeholder="Montant €" min="0" step="0.5" class="command-bar-amount" title="Montant">
+        <select class="command-bar-select" id="quickInputFreq" title="Fréquence de répétition">
+          <option value="monthly" selected>Mensuel</option>
+          <option value="quarterly">Trimestriel</option>
+          <option value="biannual">Semestriel</option>
+          <option value="annual">Annuel</option>
+          <option value="once">Ponctuel</option>
+        </select>
+        <select class="command-bar-select" id="quickInputCat" title="Catégorie">
+          <option value="finance">💶 Factures</option>
+          <option value="subscription">🍿 Abonnements</option>
+          <option value="health">🩺 Santé</option>
+          <option value="admin">📋 Admin</option>
+        </select>
+        <button class="command-bar-add-btn" onclick="window.app.quickAddFromBar()">+ Ajouter</button>
+      </div>
+    </div>
 
-      <!-- Horizon 2: Cette semaine (3 à 7 jours) -->
-      <section class="horizon-section" id="section-this-week">
-        <div class="horizon-header">
-          <div class="horizon-title-group">
-            <span class="horizon-dot dot-week"></span>
-            <span class="horizon-title">Cette semaine (3 à 7 jours)</span>
-            <span class="horizon-count" id="badge-count-this-week">0</span>
-          </div>
-          <span style="font-size: 11px; color: var(--text-muted);">À anticiper</span>
-        </div>
-        <div class="task-list-loop" id="grid-this-week"></div>
-      </section>
+    <!-- 4. COCKPIT 2-COLUMN GRID (RADAR MAIN + COMPANION SIDEBAR) -->
+    <div class="cockpit-grid" id="cockpitGrid">
 
-      <!-- Horizon 3: Ce mois-ci (8 à 30 jours) -->
-      <section class="horizon-section" id="section-this-month">
-        <div class="horizon-header">
-          <div class="horizon-title-group">
-            <span class="horizon-dot dot-month"></span>
-            <span class="horizon-title">Ce mois-ci (8 à 30 jours)</span>
-            <span class="horizon-count" id="badge-count-this-month">0</span>
+      <!-- MAIN COLUMN: RADAR DES BOUCLES (68%) -->
+      <div class="cockpit-main" id="view-radar">
+        
+        <!-- Horizon 1: Action requise (< 7 jours & en retard) -->
+        <section class="horizon-card-group" id="section-urgent">
+          <div class="horizon-header">
+            <div class="horizon-title-group">
+              <span class="horizon-dot dot-urgent"></span>
+              <span class="horizon-title urgent">Action requise · Moins de 7 jours & En retard</span>
+              <span class="horizon-count" id="badge-count-urgent">0</span>
+            </div>
+            <span class="horizon-subtitle">À régler ou déléguer</span>
           </div>
-          <span style="font-size: 11px; color: var(--text-muted);">Moyen terme</span>
-        </div>
-        <div class="task-list-loop" id="grid-this-month"></div>
-      </section>
+          <div class="task-list-loop" id="grid-urgent"></div>
+        </section>
 
-      <!-- Horizon 4: À venir (> 30 jours) -->
-      <section class="horizon-section" id="section-later">
-        <div class="horizon-header">
-          <div class="horizon-title-group">
-            <span class="horizon-dot dot-later"></span>
-            <span class="horizon-title">À venir (> 30 jours)</span>
-            <span class="horizon-count" id="badge-count-later">0</span>
+        <!-- Horizon 2: Ce mois-ci (8 à 30 jours) -->
+        <section class="horizon-card-group" id="section-this-month">
+          <div class="horizon-header">
+            <div class="horizon-title-group">
+              <span class="horizon-dot dot-month"></span>
+              <span class="horizon-title">Ce mois-ci · Prochains 30 jours</span>
+              <span class="horizon-count" id="badge-count-this-month">0</span>
+            </div>
+            <span class="horizon-subtitle">Sous surveillance</span>
           </div>
-          <span style="font-size: 11px; color: var(--text-muted);">Veille automatique</span>
+          <div class="task-list-loop" id="grid-this-month"></div>
+        </section>
+
+        <!-- Horizon 3: Plus tard dans l'année (> 30 jours) -->
+        <section class="horizon-card-group" id="section-later">
+          <div class="horizon-header" onclick="window.app.toggleLaterCollapse()" style="cursor: pointer;" title="Cliquer pour afficher / masquer">
+            <div class="horizon-title-group">
+              <span class="horizon-dot dot-later"></span>
+              <span class="horizon-title">Plus tard dans l'année (Trimestre & Annuel)</span>
+              <span class="horizon-count" id="badge-count-later">0</span>
+            </div>
+            <span class="horizon-subtitle" id="laterToggleLabel">Afficher ▾</span>
+          </div>
+          <div class="task-list-loop" id="grid-later" style="display: none;"></div>
+        </section>
+
+      </div>
+
+      <!-- ASIDE COLUMN: COMPANION MATELAS & ECOSYSTEM PASSAGE (32%) -->
+      <aside class="cockpit-side">
+        
+        <!-- WIDGET 1: MATELAS DE SÉRÉNITÉ -->
+        <div class="side-card">
+          <div class="side-card-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 16px;">🛡️</span>
+              <span class="side-card-title">Matelas de Sérénité</span>
+            </div>
+            <span class="side-card-badge" id="sideSinkingAmount">+0 €/m</span>
+          </div>
+          <div class="side-card-desc">
+            Épargne mensuelle conseillée pour lisser vos dépenses annuelles sans aucune surprise.
+          </div>
+          <div class="sinking-mini-list" id="sideSinkingMiniList"></div>
+          <button type="button" class="btn-side-action" onclick="window.app.setView('sinking')">
+            Voir le plan de trésorerie complet →
+          </button>
         </div>
-        <div class="task-list-loop" id="grid-later"></div>
-      </section>
+
+        <!-- WIDGET 2: RÉPARTITION DU BUDGET -->
+        <div class="side-card">
+          <div class="side-card-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 16px;">📊</span>
+              <span class="side-card-title">Budget Récurrent Lissé</span>
+            </div>
+            <span class="side-card-title" id="sideMonthlyTotal" style="color: var(--color-loop-mint);">0 € / mois</span>
+          </div>
+          <div class="category-breakdown-bars" id="sideCategoryBars"></div>
+        </div>
+
+        <!-- WIDGET 3: PASSERELLE SPAN SUITE -->
+        <div class="side-card bridge-banner">
+          <div class="side-card-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 16px;">🔁</span>
+              <span class="side-card-title">Passerelle Span Suite</span>
+            </div>
+            <span class="cloud-status-badge" style="font-size: 10.5px;">● Connecté</span>
+          </div>
+          <div class="side-card-desc">
+            Sur chaque carte, cliquez sur <strong>[ 📅 Plan ]</strong> pour timeblocker dans Span Plan ou sur <strong>[ ⚡ Focus ]</strong> pour régler l'obligation tout de suite avec le timer !
+          </div>
+        </div>
+
+      </aside>
 
     </div>
 
@@ -249,10 +272,10 @@
           <div>
             <div class="modal-label">Catégorie</div>
             <div class="category-pills" id="form-cat-pills">
-              <button type="button" class="cat-pill active" data-cat="finance" onclick="window.app.selectFormCat('finance')">Home (Finances)</button>
-              <button type="button" class="cat-pill" data-cat="subscription" onclick="window.app.selectFormCat('subscription')">Fun (Abonnements)</button>
-              <button type="button" class="cat-pill" data-cat="admin" onclick="window.app.selectFormCat('admin')">Work (Admin)</button>
-              <button type="button" class="cat-pill" data-cat="health" onclick="window.app.selectFormCat('health')">Rituels & Santé</button>
+              <button type="button" class="cat-pill active" data-cat="finance" onclick="window.app.selectFormCat('finance')">💶 Factures</button>
+              <button type="button" class="cat-pill" data-cat="subscription" onclick="window.app.selectFormCat('subscription')">🍿 Abonnements</button>
+              <button type="button" class="cat-pill" data-cat="health" onclick="window.app.selectFormCat('health')">🩺 Santé</button>
+              <button type="button" class="cat-pill" data-cat="admin" onclick="window.app.selectFormCat('admin')">📋 Admin</button>
             </div>
             <input type="hidden" id="form-cat-val" value="finance">
           </div>
@@ -321,6 +344,81 @@
       </div>
       <div style="flex: 1; min-height: 380px; border-radius: 12px; overflow: hidden; border: 1px solid var(--card-border);">
         <iframe id="email-preview-iframe" style="width: 100%; height: 100%; border: none; background: #0b0f19;"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: PRESETS / MODÈLES RAPIDES                                          -->
+  <!-- ========================================================================= -->
+  <div class="modal-overlay" id="modal-presets">
+    <div class="modal-card" style="max-width: 580px;">
+      <div class="modal-header">
+        <span>✨ Modèles de Boucles Fréquents</span>
+        <button class="modal-close" onclick="window.app.togglePresetsModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size: 12.5px; color: var(--text-muted);">
+          Cliquez sur un modèle pour l'ajouter instantanément à votre radar :
+        </div>
+        <div class="presets-grid">
+          <button class="preset-card" type="button" onclick="window.app.applyPreset('rent'); window.app.togglePresetsModal();">
+            <span class="preset-card-icon">🏢</span>
+            <div class="preset-card-info">
+              <span class="preset-card-title">Loyer & Charges</span>
+              <span class="preset-card-meta">850 € · Mensuel · 💶 Factures</span>
+            </div>
+          </button>
+          <button class="preset-card" type="button" onclick="window.app.applyPreset('netflix'); window.app.togglePresetsModal();">
+            <span class="preset-card-icon">🍿</span>
+            <div class="preset-card-info">
+              <span class="preset-card-title">Netflix Standard</span>
+              <span class="preset-card-meta">14.99 € · Mensuel · 🍿 Abonnements</span>
+            </div>
+          </button>
+          <button class="preset-card" type="button" onclick="window.app.applyPreset('spotify'); window.app.togglePresetsModal();">
+            <span class="preset-card-icon">🎵</span>
+            <div class="preset-card-info">
+              <span class="preset-card-title">Spotify Premium</span>
+              <span class="preset-card-meta">10.99 € · Mensuel · 🍿 Abonnements</span>
+            </div>
+          </button>
+          <button class="preset-card" type="button" onclick="window.app.applyPreset('car'); window.app.togglePresetsModal();">
+            <span class="preset-card-icon">🚗</span>
+            <div class="preset-card-info">
+              <span class="preset-card-title">Assurance Auto</span>
+              <span class="preset-card-meta">600 € · Annuel (50€/m) · 💶 Factures</span>
+            </div>
+          </button>
+          <button class="preset-card" type="button" onclick="window.app.applyPreset('dentist'); window.app.togglePresetsModal();">
+            <span class="preset-card-icon">🦷</span>
+            <div class="preset-card-info">
+              <span class="preset-card-title">Dentiste & Détartrage</span>
+              <span class="preset-card-meta">60 € · Annuel · 🩺 Santé</span>
+            </div>
+          </button>
+          <button class="preset-card" type="button" onclick="window.app.applyPreset('tax'); window.app.togglePresetsModal();">
+            <span class="preset-card-icon">💼</span>
+            <div class="preset-card-info">
+              <span class="preset-card-title">Déclaration TVA</span>
+              <span class="preset-card-meta">Trimestriel · 📋 Admin</span>
+            </div>
+          </button>
+          <button class="preset-card" type="button" onclick="window.app.applyPreset('gym'); window.app.togglePresetsModal();">
+            <span class="preset-card-icon">🏋️</span>
+            <div class="preset-card-info">
+              <span class="preset-card-title">Salle de Sport</span>
+              <span class="preset-card-meta">39.99 € · Mensuel · 🍿 Abonnements</span>
+            </div>
+          </button>
+          <button class="preset-card" type="button" onclick="window.app.applyPreset('trial'); window.app.togglePresetsModal();">
+            <span class="preset-card-icon">⏳</span>
+            <div class="preset-card-info">
+              <span class="preset-card-title">Résilier Essai Gratuit</span>
+              <span class="preset-card-meta">Ponctuel (J-2) · 🍿 Abonnements</span>
+            </div>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -425,6 +523,6 @@
   <!-- Supabase JS Client for Multi-Device Ecosystem Sync -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Main Controller -->
-  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/app.js?v=1.0.3"></script>
 </body>
 </html>
