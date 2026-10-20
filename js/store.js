@@ -106,15 +106,34 @@ export class Store {
   constructor() {
     this.deadlines = [];
     this.history = [];
+    this.syncUserId = this.getSyncUserId();
     this.settings = {
-      supabaseUrl: '',
-      supabaseAnonKey: '',
+      supabaseUrl: 'https://xzoukiveknyuxmbrcsvb.supabase.co',
+      supabaseAnonKey: 'sb_publishable_8g571gv3CFOyJ0lMtaAf4w_CcITQovd',
       resendApiKey: '',
       userEmail: 'alexandre@span.app',
       enableDailyCron: true
     };
     this.listeners = new Set();
     this.init();
+  }
+
+  getSyncUserId() {
+    let id = localStorage.getItem('span_sync_user');
+    if (!id) {
+      id = 'span_' + Math.random().toString(36).substring(2, 8) + '_' + Date.now().toString(36);
+      localStorage.setItem('span_sync_user', id);
+    }
+    return id;
+  }
+
+  setSyncUserId(newId) {
+    const clean = (newId || '').trim();
+    if (!clean) return false;
+    this.syncUserId = clean;
+    localStorage.setItem('span_sync_user', clean);
+    this.notify();
+    return true;
   }
 
   init() {
@@ -296,6 +315,60 @@ export class Store {
   resetDefaults() {
     this.deadlines = [...DEFAULT_DEADLINES];
     this.saveDeadlines();
+  }
+
+  // Merge remote cloud deadlines with local store
+  mergeRemoteDeadlines(remoteItems) {
+    if (!Array.isArray(remoteItems) || remoteItems.length === 0) return;
+    const map = new Map();
+    remoteItems.forEach(item => {
+      if (item && item.id) map.set(String(item.id), item);
+    });
+    this.deadlines.forEach(local => {
+      if (!local || !local.id) return;
+      const remote = map.get(String(local.id));
+      if (!remote) {
+        map.set(String(local.id), local);
+      } else {
+        const localT = new Date(local.updatedAt || local.createdAt || 0).getTime();
+        const remoteT = new Date(remote.updatedAt || remote.createdAt || 0).getTime();
+        if (localT > remoteT) {
+          map.set(String(local.id), local);
+        }
+      }
+    });
+    this.deadlines = Array.from(map.values());
+    this.saveDeadlines();
+  }
+
+  // Merge remote cloud history with local store
+  mergeRemoteHistory(remoteHistory) {
+    if (!Array.isArray(remoteHistory) || remoteHistory.length === 0) return;
+    const map = new Map();
+    remoteHistory.forEach(h => {
+      if (h && h.id) map.set(String(h.id), h);
+    });
+    this.history.forEach(h => {
+      if (h && h.id) map.set(String(h.id), h);
+    });
+    this.history = Array.from(map.values()).sort((a, b) => {
+      return new Date(b.completedAt || 0) - new Date(a.completedAt || 0);
+    });
+    this.saveHistory();
+  }
+
+  // Import JSON backup
+  importData(data) {
+    if (!data) return false;
+    if (Array.isArray(data.deadlines)) {
+      this.deadlines = data.deadlines;
+      this.saveDeadlines();
+    }
+    if (Array.isArray(data.history)) {
+      this.history = data.history;
+      this.saveHistory();
+    }
+    return true;
   }
 
   // Compute stats

@@ -1,13 +1,18 @@
-// Span Loop - Main Application Controller (Fully Unified with Span Suite)
 import { Store } from './store.js';
 import { Recurrence } from './recurrence.js';
 import { EmailService } from './emailService.js';
 import { shootConfetti } from './confetti.js';
 import { sound } from './sound.js';
+import { CloudSync } from './sync.js';
 
 class App {
   constructor() {
     this.store = new Store();
+    this.sync = new CloudSync(this.store, {
+      onStatusChange: (status) => this.updateCloudStatusBadge(status),
+      onSyncSuccess: () => this.render(),
+      onSyncError: () => {}
+    });
     this.activeCategory = 'all';
     this.currentView = 'radar'; // 'radar', 'sinking', 'history'
     this.init();
@@ -603,11 +608,91 @@ class App {
   openSettingsModal() {
     sound.playPop();
     const modal = document.getElementById('modal-settings');
+    const syncKey = this.sync.getSyncUserId();
+    const displaySync = document.getElementById('displaySyncKey');
+    if (displaySync) displaySync.textContent = syncKey;
+
+    const inputSync = document.getElementById('inputSyncKey');
+    if (inputSync) inputSync.value = syncKey;
+    const inputSecret = document.getElementById('inputSyncSecret');
+    if (inputSecret) inputSecret.value = syncKey;
+
+    this.updateCloudStatusBadge(this.sync.syncStatus);
+
     document.getElementById('settings-email').value = this.store.settings.userEmail || '';
     document.getElementById('settings-supabase-url').value = this.store.settings.supabaseUrl || '';
     document.getElementById('settings-supabase-key').value = this.store.settings.supabaseAnonKey || '';
     document.getElementById('settings-resend-key').value = this.store.settings.resendApiKey || '';
     modal.classList.add('active');
+  }
+
+  updateCloudStatusBadge(status) {
+    const badge = document.getElementById('cloudSyncStatusBadge');
+    if (!badge) return;
+    badge.className = 'cloud-status-badge ' + (status || '');
+    if (status === 'connected') {
+      badge.textContent = '● Connecté Cloud';
+    } else if (status === 'syncing') {
+      badge.textContent = '● Synchro en cours...';
+    } else if (status === 'error') {
+      badge.textContent = '▲ Erreur Cloud';
+    } else {
+      badge.textContent = '○ Mode Local';
+    }
+  }
+
+  copySyncKey() {
+    const key = this.sync.getSyncUserId();
+    navigator.clipboard.writeText(key).then(() => {
+      sound.playPop();
+      this.showToast('Clé Span Suite copiée dans le presse-papier ! 📋');
+    }).catch(() => {
+      this.showToast('Échec de la copie de la clé.');
+    });
+  }
+
+  handleLinkSyncKey() {
+    const input = document.getElementById('inputSyncKey');
+    const key = input ? input.value.trim() : '';
+    if (!key) {
+      this.showToast('Veuillez entrer une clé ou un username.');
+      return;
+    }
+
+    const ok = this.sync.setSyncUserId(key);
+    if (ok) {
+      const displaySync = document.getElementById('displaySyncKey');
+      if (displaySync) displaySync.textContent = key;
+      const inputSecret = document.getElementById('inputSyncSecret');
+      if (inputSecret) inputSecret.value = key;
+      sound.playSuccess();
+      this.showToast('Compte Span Suite lié avec succès ! 🔗');
+    }
+  }
+
+  importDataFromJson(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        const ok = this.store.importData(data);
+        if (ok) {
+          sound.playSuccess();
+          this.showToast('Sauvegarde restaurée avec succès ! 📥');
+          this.render();
+        } else {
+          this.showToast('Format de fichier JSON invalide.');
+        }
+      } catch (err) {
+        this.showToast('Erreur lors de la lecture du fichier JSON.');
+      }
+    };
+    reader.readAsText(file);
+    // Reset file input value so re-selecting same file triggers change
+    event.target.value = '';
   }
 
   closeSettingsModal() {
@@ -621,6 +706,7 @@ class App {
       supabaseAnonKey: document.getElementById('settings-supabase-key').value.trim(),
       resendApiKey: document.getElementById('settings-resend-key').value.trim()
     });
+    this.sync.initClient();
     this.closeSettingsModal();
     sound.playSuccess();
     this.showToast('Paramètres sauvegardés.');
