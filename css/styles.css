@@ -17,12 +17,12 @@
   --streak: #e2b340;
   --danger: #ef4444;
 
-  /* SPAN UNIFIED TRI-CATEGORY & SUITE PALETTE */
-  --cat-work: #818cf8; /* Soft Indigo (Admin & Legal) */
-  --cat-home: #10b981; /* Emerald (Finances & Charges) */
-  --cat-fun:  #fb7185; /* Coral (Abonnements & Loisirs) */
-  --cat-health: #34d399; /* Mint (Santé & Rituels) */
-  --cat-none: #71717a;
+  /* SPAN LOOP DISTINCT CATEGORY PALETTE */
+  --cat-finance:      #10b981; /* Vert Émeraude (Factures & Charges) */
+  --cat-subscription: #38bdf8; /* Bleu Azur (Abonnements & Services) */
+  --cat-health:       #fb7185; /* Rose Corail (Santé & Rituels) */
+  --cat-admin:        #facc15; /* Jaune Ambré (Admin & Démarches) */
+  --cat-none:         #71717a;
 
   /* SPAN LOOP SIGNATURE ACCENT */
   --color-loop: #10b981;
@@ -293,6 +293,26 @@ body {
   color: var(--color-loop);
   border-color: rgba(16, 185, 129, 0.38);
 }
+.cat-pill-filter[data-cat="finance"].active {
+  background: rgba(16, 185, 129, 0.16);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.45);
+}
+.cat-pill-filter[data-cat="subscription"].active {
+  background: rgba(56, 189, 248, 0.16);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.45);
+}
+.cat-pill-filter[data-cat="health"].active {
+  background: rgba(251, 113, 133, 0.16);
+  color: #fb7185;
+  border-color: rgba(251, 113, 133, 0.45);
+}
+.cat-pill-filter[data-cat="admin"].active {
+  background: rgba(250, 204, 21, 0.16);
+  color: #facc15;
+  border-color: rgba(250, 204, 21, 0.45);
+}
 
 .cat-count-pill {
   font-size: 11px;
@@ -534,11 +554,11 @@ body {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
 
-/* Category Left Border Liserés */
-.task-card[data-cat="finance"]      { border-left-color: #10b981; }
-.task-card[data-cat="subscription"] { border-left-color: #fb7185; }
-.task-card[data-cat="health"]       { border-left-color: #34d399; }
-.task-card[data-cat="admin"]        { border-left-color: #818cf8; }
+/* Category Left Border Liserés (Quad-Green Spectrum) */
+.task-card[data-cat="finance"]      { border-left-color: var(--cat-finance); }
+.task-card[data-cat="subscription"] { border-left-color: var(--cat-subscription); }
+.task-card[data-cat="health"]       { border-left-color: var(--cat-health); }
+.task-card[data-cat="admin"]        { border-left-color: var(--cat-admin); }
 
 .task-card.urgent-glow {
   border-left-color: #ef4444 !important;
@@ -569,10 +589,19 @@ body {
   border: 1px solid var(--card-border);
   flex-shrink: 0;
 }
-.card-cat-badge.finance      { background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.25); }
-.card-cat-badge.subscription { background: rgba(251, 113, 133, 0.12); border-color: rgba(251, 113, 133, 0.25); }
-.card-cat-badge.health       { background: rgba(52, 211, 153, 0.12); border-color: rgba(52, 211, 153, 0.25); }
-.card-cat-badge.admin        { background: rgba(129, 140, 248, 0.12); border-color: rgba(129, 140, 248, 0.25); }
+.card-cat-badge.finance      { background: rgba(16, 185, 129, 0.16); border-color: rgba(16, 185, 129, 0.4); }
+.card-cat-badge.subscription { background: rgba(56, 189, 248, 0.16); border-color: rgba(56, 189, 248, 0.4); }
+.card-cat-badge.health       { background: rgba(251, 113, 133, 0.16); border-color: rgba(251, 113, 133, 0.4); }
+.card-cat-badge.admin        { background: rgba(250, 204, 21, 0.16); border-color: rgba(250, 204, 21, 0.4); }
+
+.card-cat-name {
+  font-weight: 600;
+  transition: color 0.15s ease;
+}
+.card-cat-name.finance      { color: #10b981; }
+.card-cat-name.subscription { color: #38bdf8; }
+.card-cat-name.health       { color: #fb7185; }
+.card-cat-name.admin        { color: #facc15; }
 
 .card-text-block {
   display: flex;
@@ -766,6 +795,191 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+/* WIDGET 0: MES ÉCONOMIES (CAGNOTTE TOTALE ACCUMULÉE) */
+.savings-pot-card {
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, var(--card-bg) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-cash-edit {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-cash-edit:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.savings-hero-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.savings-amount-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.savings-amount {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--color-loop-mint);
+  line-height: 1.1;
+}
+
+.savings-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(16, 185, 129, 0.14);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.savings-desc-sub {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* WIDGET 0.5: TRÉSORERIE DU MOIS & RITUELS */
+.monthly-cashflow-card {
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+}
+
+.surplus-banner {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.16) 0%, rgba(16, 185, 129, 0.05) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.btn-transfer-surplus {
+  background: #10b981;
+  color: #ffffff;
+  border: none;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.btn-transfer-surplus:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.cashflow-formula-box {
+  background: var(--card-sub-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 11px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cashflow-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12.5px;
+}
+
+.cashflow-label {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.cashflow-val {
+  font-weight: 700;
+  color: var(--text-main);
+}
+.cashflow-val.minus {
+  color: #fb7185;
+}
+.cashflow-val.plus {
+  color: #10b981;
+  font-size: 16px;
+}
+
+.cashflow-divider {
+  height: 1px;
+  background: var(--card-border);
+  margin: 3px 0;
+}
+
+.cashflow-tempo {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: right;
+  margin-top: -2px;
+}
+
+.checking-balance-sync-box {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--card-border);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.month-end-box {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--card-border);
+  border-radius: 11px;
+  padding: 9px 12px;
+}
+
+.btn-month-end-action {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 6px 11px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.btn-month-end-action:hover {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: #38bdf8;
+  transform: translateY(-1px);
+}
+
+.savings-history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card-sub-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 9px;
+  padding: 8px 10px;
+  font-size: 12px;
 }
 
 .side-card-header {
@@ -1104,6 +1318,10 @@ body {
   color: var(--color-loop);
   border-color: rgba(16, 185, 129, 0.4);
 }
+.cat-pill[data-cat="finance"].active      { background: rgba(16, 185, 129, 0.2); color: #10b981; border-color: #10b981; }
+.cat-pill[data-cat="subscription"].active { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border-color: #38bdf8; }
+.cat-pill[data-cat="health"].active       { background: rgba(251, 113, 133, 0.2); color: #fb7185; border-color: #fb7185; }
+.cat-pill[data-cat="admin"].active        { background: rgba(250, 204, 21, 0.2); color: #facc15; border-color: #facc15; }
 
 .modal-footer {
   display: flex;

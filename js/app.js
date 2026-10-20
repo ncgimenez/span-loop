@@ -244,6 +244,16 @@ class App {
     if (budgetBadge) {
       budgetBadge.textContent = `🛡️ +${sinking.totalMonthlyProvision.toLocaleString('fr-FR')} € / m`;
     }
+
+    const cashBadge = document.getElementById('statCashBadge');
+    if (cashBadge) {
+      cashBadge.textContent = `🐷 ${(stats.totalSavings || 0).toLocaleString('fr-FR')} € épargnés`;
+      cashBadge.style.display = 'inline-flex';
+      cashBadge.onclick = (e) => {
+        e.stopPropagation();
+        this.openAdjustSavingsModal();
+      };
+    }
   }
 
   renderCategoryCounts() {
@@ -387,7 +397,7 @@ class App {
               <span class="card-dot">•</span>
               <span class="card-date">${formattedDate}</span>
               <span class="card-dot">•</span>
-              <span class="card-cat-name">${catLabel}</span>
+              <span class="card-cat-name ${item.category}">${catLabel}</span>
             </div>
           </div>
         </div>
@@ -599,9 +609,9 @@ class App {
       const active = this.store.deadlines.filter(d => d.isActive);
       const cats = [
         { key: 'finance', label: '💶 Factures', color: '#10b981' },
-        { key: 'subscription', label: '🍿 Abonnements', color: '#fb7185' },
-        { key: 'health', label: '🩺 Santé', color: '#34d399' },
-        { key: 'admin', label: '📋 Admin', color: '#818cf8' }
+        { key: 'subscription', label: '🍿 Abonnements', color: '#38bdf8' },
+        { key: 'health', label: '🩺 Santé', color: '#fb7185' },
+        { key: 'admin', label: '📋 Admin', color: '#facc15' }
       ];
 
       const catTotals = {};
@@ -630,6 +640,191 @@ class App {
         `;
       }).join('');
     }
+
+    // 0. WIDGET MES ÉCONOMIES (CAGNOTTE TOTALE)
+    const savingsAmountEl = document.getElementById('savingsAmountDisplay');
+    if (savingsAmountEl) {
+      savingsAmountEl.textContent = `${(stats.totalSavings || 0).toLocaleString('fr-FR')} €`;
+    }
+
+    const savingsBadgeEl = document.getElementById('savingsMonthlyGainBadge');
+    if (savingsBadgeEl) {
+      const monthGain = (stats.savingsHistory || [])
+        .filter(h => {
+          const d = new Date(h.date || 0);
+          return d.getMonth() === new Date().getMonth() && d.getFullYear() === new Date().getFullYear();
+        })
+        .reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
+      savingsBadgeEl.textContent = `+${monthGain.toLocaleString('fr-FR')} € ce mois`;
+    }
+
+    // 0.5. WIDGET TRÉSORERIE DU MOIS & RITUELS
+    const targetDisp = document.getElementById('cashflowTargetDisplay');
+    if (targetDisp) targetDisp.textContent = `${(stats.monthlyTarget || 1500).toLocaleString('fr-FR')} €`;
+
+    const baseTargetDisp = document.getElementById('cashflowBaseTarget');
+    if (baseTargetDisp) baseTargetDisp.textContent = `${(stats.monthlyTarget || 1500).toLocaleString('fr-FR')} €`;
+
+    // Surplus banner (Début de mois si solde > cible)
+    const surplusBanner = document.getElementById('surplusBanner');
+    if (surplusBanner) {
+      if (stats.hasSurplus && stats.surplusAmount > 0) {
+        surplusBanner.style.display = 'flex';
+        const surplusText = document.getElementById('surplusAmountText');
+        if (surplusText) surplusText.textContent = `+${stats.surplusAmount.toLocaleString('fr-FR')} €`;
+        const surplusRef = document.getElementById('surplusTargetRef');
+        if (surplusRef) surplusRef.textContent = `${stats.monthlyTarget.toLocaleString('fr-FR')} €`;
+      } else {
+        surplusBanner.style.display = 'none';
+      }
+    }
+
+    // Formula & Living Remaining
+    const billsTotalEl = document.getElementById('cashflowBillsTotal');
+    if (billsTotalEl) {
+      billsTotalEl.textContent = `-${Math.round(stats.monthlyBudget).toLocaleString('fr-FR')} €`;
+    }
+
+    const livingEl = document.getElementById('cashflowLivingRemaining');
+    if (livingEl) {
+      livingEl.textContent = `${Math.round(stats.safeRemainingForLiving).toLocaleString('fr-FR')} €`;
+    }
+
+    const tempoEl = document.getElementById('cashflowTempoText');
+    if (tempoEl) {
+      tempoEl.textContent = `soit ~${stats.weeklyLiving.toLocaleString('fr-FR')} € / sem · ~${stats.dailyLiving.toLocaleString('fr-FR')} € / jour`;
+    }
+
+    const unpaidHintEl = document.getElementById('unpaidBillsHint');
+    if (unpaidHintEl) {
+      unpaidHintEl.textContent = `dont ${Math.round(stats.pendingBillsThisMonth).toLocaleString('fr-FR')} € de factures restantes`;
+    }
+
+    const inputActual = document.getElementById('inputActualChecking');
+    if (inputActual && document.activeElement !== inputActual) {
+      inputActual.value = stats.currentCheckingBalance || '';
+    }
+
+    const leftoverText = document.getElementById('monthEndLeftoverText');
+    if (leftoverText) {
+      leftoverText.textContent = `Il te reste ${Math.round(stats.safeRemainingForLiving).toLocaleString('fr-FR')} € sur ton compte`;
+    }
+  }
+
+  executeSurplusTransfer() {
+    const surplus = this.store.transferSurplusToSavings();
+    if (surplus > 0) {
+      sound.playSuccess();
+      shootConfetti();
+      this.showToast(`🎉 +${surplus.toLocaleString('fr-FR')} € de surplus versés dans tes Économies !`);
+      this.render();
+    }
+  }
+
+  saveActualCheckingBalance() {
+    const input = document.getElementById('inputActualChecking');
+    if (!input) return;
+    const val = parseFloat(input.value) || 0;
+    this.store.setCurrentCheckingBalance(val);
+    sound.playSuccess();
+    this.showToast(`✓ Solde bancaire actualisé : ${val.toLocaleString('fr-FR')} €`);
+    this.render();
+  }
+
+  promptMonthEndRollover() {
+    const stats = this.store.getStats();
+    const suggested = Math.round(stats.safeRemainingForLiving);
+    const amountStr = prompt(
+      `✨ Clôture de fin de mois :\nCombien souhaites-tu mettre de côté parmi les ${suggested} € restants sur ton compte ?`,
+      suggested > 0 ? suggested : '50'
+    );
+    if (!amountStr) return;
+    const amount = parseFloat(amountStr) || 0;
+    if (amount <= 0) return;
+
+    this.store.transferMonthEndLeftover(amount);
+    sound.playSuccess();
+    shootConfetti();
+    this.showToast(`✨ Félicitations ! +${amount.toLocaleString('fr-FR')} € ajoutés à tes Économies !`);
+    this.render();
+  }
+
+  openAdjustSavingsModal() {
+    sound.playPop();
+    const modal = document.getElementById('modal-savings-manager');
+    const inputTotal = document.getElementById('modal-total-savings-input');
+    const inputTarget = document.getElementById('modal-monthly-target-input');
+    if (inputTotal) inputTotal.value = this.store.savings?.totalSavings || 0;
+    if (inputTarget) inputTarget.value = this.store.savings?.monthlyTarget || 1500;
+    this.renderSavingsHistoryList();
+    if (modal) modal.classList.add('active');
+  }
+
+  openTargetEditModal() {
+    this.openAdjustSavingsModal();
+    const inputTarget = document.getElementById('modal-monthly-target-input');
+    if (inputTarget) setTimeout(() => inputTarget.focus(), 80);
+  }
+
+  openSavingsHistoryModal() {
+    this.openAdjustSavingsModal();
+  }
+
+  closeSavingsModal() {
+    document.getElementById('modal-savings-manager')?.classList.remove('active');
+  }
+
+  saveTotalSavingsFromModal() {
+    const input = document.getElementById('modal-total-savings-input');
+    if (!input) return;
+    const val = parseFloat(input.value) || 0;
+    this.store.setTotalSavings(val);
+    sound.playSuccess();
+    this.showToast(`✓ Économies totales fixées à ${val.toLocaleString('fr-FR')} €`);
+    this.closeSavingsModal();
+    this.render();
+  }
+
+  saveMonthlyTargetFromModal() {
+    const input = document.getElementById('modal-monthly-target-input');
+    if (!input) return;
+    const val = parseFloat(input.value) || 0;
+    this.store.setMonthlyTarget(val);
+    sound.playSuccess();
+    this.showToast(`✓ Cible mensuelle fixée à ${val.toLocaleString('fr-FR')} €`);
+    this.closeSavingsModal();
+    this.render();
+  }
+
+  renderSavingsHistoryList() {
+    const listEl = document.getElementById('modalSavingsHistoryList');
+    const countEl = document.getElementById('modalSavingsHistoryCount');
+    const history = this.store.savings?.history || [];
+    if (countEl) countEl.textContent = `${history.length} versement${history.length > 1 ? 's' : ''}`;
+    if (!listEl) return;
+
+    if (history.length === 0) {
+      listEl.innerHTML = `<div style="font-size: 11.5px; color: var(--text-muted); padding: 8px 0;">Aucun versement enregistré pour le moment.</div>`;
+      return;
+    }
+
+    listEl.innerHTML = history.map(item => {
+      const d = new Date(item.date || Date.now());
+      const dateStr = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+      const badgeIcon = item.type === 'surplus' ? '🎉' : (item.type === 'month_end' ? '✨' : '💰');
+      return `
+        <div class="savings-history-item">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span>${badgeIcon}</span>
+            <div style="display: flex; flex-direction: column;">
+              <span style="font-weight: 600; color: var(--text-main); font-size: 12px;">${item.label || 'Versement'}</span>
+              <span style="font-size: 10.5px; color: var(--text-muted);">${dateStr}</span>
+            </div>
+          </div>
+          <span style="font-weight: 700; color: #10b981; font-size: 13px;">+${(item.amount || 0).toLocaleString('fr-FR')} €</span>
+        </div>
+      `;
+    }).join('');
   }
 
   togglePresetsModal() {
@@ -898,6 +1093,9 @@ class App {
 
     this.updateCloudStatusBadge(this.sync.syncStatus);
 
+    const incInput = document.getElementById('settings-monthly-income');
+    if (incInput) incInput.value = this.store.settings.monthlyIncome || '';
+
     document.getElementById('settings-email').value = this.store.settings.userEmail || '';
     document.getElementById('settings-supabase-url').value = this.store.settings.supabaseUrl || '';
     document.getElementById('settings-supabase-key').value = this.store.settings.supabaseAnonKey || '';
@@ -979,7 +1177,11 @@ class App {
   }
 
   saveSettingsFromForm() {
+    const incInput = document.getElementById('settings-monthly-income');
+    const incomeVal = incInput ? (parseFloat(incInput.value) || 0) : this.store.settings.monthlyIncome;
+
     this.store.saveSettings({
+      monthlyIncome: incomeVal,
       userEmail: document.getElementById('settings-email').value.trim(),
       supabaseUrl: document.getElementById('settings-supabase-url').value.trim(),
       supabaseAnonKey: document.getElementById('settings-supabase-key').value.trim(),
@@ -992,7 +1194,7 @@ class App {
   }
 
   exportDataAsJson() {
-    const data = { deadlines: this.store.deadlines, history: this.store.history };
+    const data = { deadlines: this.store.deadlines, history: this.store.history, savings: this.store.savings };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1015,6 +1217,7 @@ class App {
     this.closeDeadlineModal();
     this.closeEmailModal();
     this.closeSettingsModal();
+    this.closeSavingsModal();
   }
 
   // Toast Notification (Matching Span Focus)

@@ -11,8 +11,8 @@
   <meta name="apple-mobile-web-app-title" content="Loop">
 
   <link rel="icon" type="image/svg+xml" href="span-logo.svg">
-  <link rel="stylesheet" href="style.css?v=1.0.3">
-  <link rel="stylesheet" href="css/styles.css?v=1.0.3">
+  <link rel="stylesheet" href="style.css?v=1.0.7">
+  <link rel="stylesheet" href="css/styles.css?v=1.0.7">
 </head>
 <body>
 
@@ -48,10 +48,11 @@
         <span class="brand-app" id="headerTitle">Loop</span>
       </div>
       
-      <div class="header-metrics-pill" onclick="window.app.setView('sinking')" title="Cliquer pour voir le détail du Matelas">
+      <div class="header-metrics-pill" onclick="window.app.toggleIncomeEdit(true)" title="Cliquer pour ajuster vos rentrées mensuelles & argent disponible">
         <span class="metric-chip urgent" id="statUrgentBadge">⚡ 0 urgente</span>
         <span class="metric-chip" id="statMonthBadge">📅 0 ce mois</span>
-        <span class="metric-chip highlight" id="statBudgetBadge">🛡️ +0 € / mois</span>
+        <span class="metric-chip highlight" id="statBudgetBadge">🛡️ +0 € / m</span>
+        <span class="metric-chip cash" id="statCashBadge">💳 0 € dispo</span>
       </div>
 
       <div class="header-actions">
@@ -166,6 +167,105 @@
       <!-- ASIDE COLUMN: COMPANION MATELAS & ECOSYSTEM PASSAGE (32%) -->
       <aside class="cockpit-side">
         
+        <!-- WIDGET 0: MES ÉCONOMIES (CAGNOTTE ACCUMULÉE) -->
+        <div class="side-card savings-pot-card" id="widgetSavings">
+          <div class="side-card-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 17px;">🐷</span>
+              <span class="side-card-title">Mes Économies</span>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button type="button" class="btn-cash-edit" onclick="window.app.openSavingsHistoryModal()" title="Historique des versements">
+                📜 Historique
+              </button>
+              <button type="button" class="btn-cash-edit" onclick="window.app.openAdjustSavingsModal()" title="Modifier ma cagnotte">
+                ✏️ Ajuster
+              </button>
+            </div>
+          </div>
+
+          <div class="savings-hero-block">
+            <div class="savings-amount-row">
+              <span class="savings-amount" id="savingsAmountDisplay">0 €</span>
+              <span class="savings-badge" id="savingsMonthlyGainBadge">+0 € ce mois</span>
+            </div>
+            <div class="savings-desc-sub">
+              Cagnotte mise à l'abri hors de ton compte courant pour faire grossir ton épargne.
+            </div>
+          </div>
+        </div>
+
+        <!-- WIDGET 0.5: TRÉSORERIE DU MOIS (DÉCOMPTE & RITUELS) -->
+        <div class="side-card monthly-cashflow-card" id="widgetMonthlyCashflow">
+          <div class="side-card-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 16px;">💳</span>
+              <span class="side-card-title">Trésorerie du Mois</span>
+            </div>
+            <button type="button" class="btn-cash-edit" onclick="window.app.openTargetEditModal()" title="Ajuster ma cible de vie du mois">
+              🎯 Cible : <strong id="cashflowTargetDisplay" style="color: var(--text-main);">1 500 €</strong> ✏️
+            </button>
+          </div>
+
+          <!-- BANNIÈRE SURPLUS DÉBUT DE MOIS (quand solde > cible) -->
+          <div class="surplus-banner" id="surplusBanner" style="display: none;">
+            <div class="surplus-content">
+              <div style="font-size: 12px; font-weight: 700; color: #10b981;">🎉 Surplus début de mois détecté !</div>
+              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 1px;">
+                <strong id="surplusAmountText" style="color: #10b981;">+310 €</strong> au-dessus de ta cible de <span id="surplusTargetRef">1 500 €</span>.
+              </div>
+            </div>
+            <button type="button" class="btn-transfer-surplus" onclick="window.app.executeSurplusTransfer()">
+              Épargner ➔
+            </button>
+          </div>
+
+          <!-- DÉCOMPTE MENSUEL SANS SAISIR LES COURSES -->
+          <div class="cashflow-formula-box">
+            <div class="cashflow-row">
+              <span class="cashflow-label">Cible mensuelle pour vivre</span>
+              <span class="cashflow-val" id="cashflowBaseTarget">1 500 €</span>
+            </div>
+            <div class="cashflow-row">
+              <span class="cashflow-label">− Factures & charges récurrentes</span>
+              <span class="cashflow-val minus" id="cashflowBillsTotal">-0 €</span>
+            </div>
+            <div class="cashflow-divider"></div>
+            <div class="cashflow-row highlight">
+              <span class="cashflow-label" style="font-weight: 700;">Reste libre (courses & vie)</span>
+              <span class="cashflow-val plus" id="cashflowLivingRemaining">0 €</span>
+            </div>
+            <div class="cashflow-tempo" id="cashflowTempoText">
+              soit ~0 € / semaine · ~0 € / jour
+            </div>
+          </div>
+
+          <!-- SYNCHRO RAPIDE SOLDE BANCAIRE (ZÉRO TICKET DE COURSES À NOTER) -->
+          <div class="checking-balance-sync-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+              <span style="font-size: 11.5px; font-weight: 600; color: var(--text-muted);">Solde bancaire actuel :</span>
+              <span style="font-size: 11px; color: var(--text-muted);" id="unpaidBillsHint">dont 0 € de factures restantes</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <input type="number" id="inputActualChecking" class="command-bar-input" style="padding: 6px 10px; font-size: 13px; border-radius: 8px; flex: 1;" placeholder="ex: 1810" min="0" step="10" onkeydown="if(event.key==='Enter') window.app.saveActualCheckingBalance()">
+              <button type="button" class="loop-validate-btn" style="padding: 6px 12px; font-size: 12px;" onclick="window.app.saveActualCheckingBalance()">Mettre à jour</button>
+            </div>
+          </div>
+
+          <!-- RITUEL FIN DE MOIS: BALAYAGE DU RESTANT -->
+          <div class="month-end-box" id="monthEndBox">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+              <div style="display: flex; flex-direction: column; gap: 1px;">
+                <span style="font-size: 12px; font-weight: 700; color: var(--text-main);">✨ Clôture de fin de mois</span>
+                <span style="font-size: 11px; color: var(--text-muted);" id="monthEndLeftoverText">Transférer le restant du compte aux Économies</span>
+              </div>
+              <button type="button" class="btn-month-end-action" onclick="window.app.promptMonthEndRollover()">
+                Épargner le reste ➔
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- WIDGET 1: MATELAS DE SÉRÉNITÉ -->
         <div class="side-card">
           <div class="side-card-header">
@@ -464,13 +564,28 @@
           </form>
         </div>
 
-        <!-- SECTION 2: EMAIL ALERTS & NOTIFICATIONS -->
-        <div class="settings-section-divider"></div>
-        <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.08em;">
-          Alertes & Notifications Email
-        </div>
-
         <form id="settingsGeneralForm" onsubmit="event.preventDefault(); window.app.saveSettingsFromForm();" style="display: flex; flex-direction: column; gap: 12px;">
+          
+          <!-- SECTION 2: BUDGET & RENTRÉES -->
+          <div class="settings-section-divider"></div>
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.08em;">
+            Budget & Argent Disponible
+          </div>
+
+          <div>
+            <div class="modal-label">Rentrées mensuelles nettes (€)</div>
+            <input type="number" id="settings-monthly-income" placeholder="ex: 2500" class="modal-input" min="0" step="50">
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+              Utilisé pour calculer en direct votre argent disponible (reste à vivre) après déduction de vos boucles et de votre matelas.
+            </div>
+          </div>
+
+          <!-- SECTION 3: EMAIL ALERTS & NOTIFICATIONS -->
+          <div class="settings-section-divider"></div>
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.08em;">
+            Alertes & Notifications Email
+          </div>
+
           <div>
             <div class="modal-label">Email de notification par défaut</div>
             <input type="email" id="settings-email" placeholder="votre@email.com" class="modal-input">
@@ -520,9 +635,64 @@
     </div>
   </div>
 
+  <!-- ========================================================================= -->
+  <!-- MODAL: GESTIONNAIRE D'ÉCONOMIES & RITUELS                                  -->
+  <!-- ========================================================================= -->
+  <div class="modal-overlay" id="modal-savings-manager">
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-header">
+        <span>🐷 Mes Économies & Cagnotte</span>
+        <button class="modal-close" onclick="window.app.closeSavingsModal()">✕</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 6px;">
+        
+        <!-- SECTION 1: MONTANT TOTAL D'ÉPARGNE -->
+        <div>
+          <div class="modal-label">Cagnotte Totale Épargnée (€)</div>
+          <div style="display: flex; gap: 8px;">
+            <input type="number" id="modal-total-savings-input" class="modal-input" placeholder="ex: 2400" min="0" step="50" style="flex: 1;">
+            <button type="button" class="loop-validate-btn" onclick="window.app.saveTotalSavingsFromModal()">Enregistrer</button>
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+            Le montant total de tes économies (livret A, épargne de sécurité, compte tiers...).
+          </div>
+        </div>
+
+        <!-- SECTION 2: CIBLE MENSUELLE -->
+        <div class="settings-section-divider"></div>
+        <div>
+          <div class="modal-label">Cible mensuelle pour vivre (€)</div>
+          <div style="display: flex; gap: 8px;">
+            <input type="number" id="modal-monthly-target-input" class="modal-input" placeholder="ex: 1500" min="0" step="50" style="flex: 1;">
+            <button type="button" class="loop-validate-btn" onclick="window.app.saveMonthlyTargetFromModal()">Enregistrer</button>
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+            Le montant cible que tu gardes sur ton compte pour tes factures et ta vie du mois.
+          </div>
+        </div>
+
+        <!-- SECTION 3: HISTORIQUE DES VERSEMENTS -->
+        <div class="settings-section-divider"></div>
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 12px; font-weight: 700; color: var(--text-main);">Historique des versements d'épargne</span>
+            <span style="font-size: 11px; color: var(--color-loop-mint);" id="modalSavingsHistoryCount">0 versement</span>
+          </div>
+          <div id="modalSavingsHistoryList" style="display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto;"></div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer" style="margin-top: 12px;">
+        <button type="button" class="btn-modal-cancel" onclick="window.app.closeSavingsModal()">Fermer</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Supabase JS Client for Multi-Device Ecosystem Sync -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Main Controller -->
-  <script type="module" src="js/app.js?v=1.0.3"></script>
+  <script type="module" src="js/app.js?v=1.0.7"></script>
 </body>
 </html>

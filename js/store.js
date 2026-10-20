@@ -4,6 +4,29 @@ import { Recurrence } from './recurrence.js';
 const STORAGE_KEY = 'span_loop_deadlines_v1';
 const HISTORY_KEY = 'span_loop_history_v1';
 const SETTINGS_KEY = 'span_loop_settings_v1';
+const SAVINGS_KEY = 'span_loop_savings_v1';
+
+const DEFAULT_SAVINGS = {
+  totalSavings: 2400, // Économies totales accumulées (cagnotte)
+  monthlyTarget: 1500, // Cible disponible pour vivre le mois (ex: 1500 €)
+  currentCheckingBalance: 1810, // Solde actuel en compte courant (ex: avec surplus)
+  history: [
+    {
+      id: 'sav-init-1',
+      date: new Date(Date.now() - 28 * 86400000).toISOString(),
+      amount: 140,
+      type: 'month_end',
+      label: 'Restant fin de mois mis de côté'
+    },
+    {
+      id: 'sav-init-2',
+      date: new Date(Date.now() - 14 * 86400000).toISOString(),
+      amount: 310,
+      type: 'surplus',
+      label: 'Surplus début de mois versé'
+    }
+  ]
+};
 
 // Initial realistic seed items for immediate delight
 const DEFAULT_DEADLINES = [
@@ -106,12 +129,14 @@ export class Store {
   constructor() {
     this.deadlines = [];
     this.history = [];
+    this.savings = { ...DEFAULT_SAVINGS };
     this.syncUserId = this.getSyncUserId();
     this.settings = {
       supabaseUrl: 'https://xzoukiveknyuxmbrcsvb.supabase.co',
       supabaseAnonKey: 'sb_publishable_8g571gv3CFOyJ0lMtaAf4w_CcITQovd',
       resendApiKey: '',
       userEmail: 'alexandre@span.app',
+      monthlyIncome: 2500, // Budget mensuel net de référence pour l'argent disponible
       enableDailyCron: true
     };
     this.listeners = new Set();
@@ -204,6 +229,28 @@ export class Store {
     } catch (e) {
       this.history = [];
     }
+
+    // Load Savings
+    try {
+      const savedSavings = localStorage.getItem(SAVINGS_KEY);
+      if (savedSavings) {
+        this.savings = { ...DEFAULT_SAVINGS, ...JSON.parse(savedSavings) };
+      } else {
+        this.savings = { ...DEFAULT_SAVINGS };
+        this.saveSavings();
+      }
+    } catch (e) {
+      this.savings = { ...DEFAULT_SAVINGS };
+    }
+  }
+
+  saveSavings() {
+    try {
+      localStorage.setItem(SAVINGS_KEY, JSON.stringify(this.savings));
+    } catch (e) {
+      console.error('Failed to save savings', e);
+    }
+    this.notify();
   }
 
   subscribe(listener) {
@@ -368,6 +415,10 @@ export class Store {
       this.history = data.history;
       this.saveHistory();
     }
+    if (data.savings && typeof data.savings === 'object') {
+      this.savings = { ...DEFAULT_SAVINGS, ...data.savings };
+      this.saveSavings();
+    }
     return true;
   }
 
@@ -404,12 +455,143 @@ export class Store {
 
     const sinkingFunds = Recurrence.calculateSinkingFunds(this.deadlines);
 
+    // Current month's bills details
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // Sum of this month's bills already completed / validated
+    const completedThisMonth = this.history.filter(h => {
+      if (!h.completedAt) return false;
+      const d = new Date(h.completedAt);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    });
+    const billsPaidThisMonth = completedThisMonth.reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
+
+    // Pending unpaid bills for this month
+    const pendingBillsThisMonth = active.filter(item => {
+      if (!item.amount || item.amount <= 0) return false;
+      const d = new Date(item.nextDueDate);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    }).reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
+
+    // Savings & Flow Metrics
+    const totalSavings = this.savings?.totalSavings || 0;
+    const monthlyTarget = this.savings?.monthlyTarget || 1500;
+    const currentCheckingBalance = this.savings?.currentCheckingBalance !== undefined 
+      ? this.savings.currentCheckingBalance 
+      : 1500;
+
+    const surplusAmount = Math.max(0, currentCheckingBalance - monthlyTarget);
+    const hasSurplus = surplusAmount > 0;
+
+    // Remaining cash for free daily living without touching unpaid bills
+    const safeRemainingForLiving = Math.max(0, currentCheckingBalance - pendingBillsThisMonth);
+    const weeklyLiving = safeRemainingForLiving > 0 ? Math.round(safeRemainingForLiving / 4.33) : 0;
+    const dailyLiving = safeRemainingForLiving > 0 ? Math.round(safeRemainingForLiving / 30) : 0;
+
+    // Argent Disponible (Safe-to-Spend / Reste à vivre général)
+    const monthlyIncome = parseFloat(this.settings.monthlyIncome) || 0;
+    const isIncomeConfigured = monthlyIncome > 0;
+    const totalDeductions = monthlyBudget + (sinkingFunds.totalMonthlyProvision || 0);
+    const availableCash = isIncomeConfigured ? Math.round(monthlyIncome - totalDeductions) : 0;
+    const dailyCash = availableCash > 0 ? Math.round(availableCash / 30) : 0;
+    const weeklyCash = availableCash > 0 ? Math.round(availableCash / 4.33) : 0;
+
     return {
       monthlyBudget,
       consistency,
       totalCompleted: this.history.length,
       counts,
-      sinkingFunds
+      sinkingFunds,
+      monthlyIncome,
+      isIncomeConfigured,
+      totalDeductions,
+      availableCash,
+      dailyCash,
+      weeklyCash,
+      // Savings specific
+      totalSavings,
+      monthlyTarget,
+      currentCheckingBalance,
+      surplusAmount,
+      hasSurplus,
+      billsPaidThisMonth,
+      pendingBillsThisMonth,
+      safeRemainingForLiving,
+      weeklyLiving,
+      dailyLiving,
+      savingsHistory: this.savings?.history || []
     };
+  }
+
+  setMonthlyIncome(amount) {
+    const val = Math.max(0, parseFloat(amount) || 0);
+    this.saveSettings({ monthlyIncome: val });
+    return val;
+  }
+
+  setTotalSavings(amount) {
+    const val = Math.max(0, parseFloat(amount) || 0);
+    this.savings.totalSavings = val;
+    this.saveSavings();
+    return val;
+  }
+
+  setMonthlyTarget(amount) {
+    const val = Math.max(0, parseFloat(amount) || 0);
+    this.savings.monthlyTarget = val;
+    this.saveSavings();
+    return val;
+  }
+
+  setCurrentCheckingBalance(amount) {
+    const val = parseFloat(amount) || 0;
+    this.savings.currentCheckingBalance = val;
+    this.saveSavings();
+    return val;
+  }
+
+  transferSurplusToSavings(customAmount = null) {
+    const surplus = customAmount !== null 
+      ? parseFloat(customAmount) 
+      : Math.max(0, (this.savings.currentCheckingBalance || 0) - (this.savings.monthlyTarget || 0));
+
+    if (surplus <= 0) return 0;
+
+    this.savings.totalSavings = (this.savings.totalSavings || 0) + surplus;
+    this.savings.currentCheckingBalance = this.savings.monthlyTarget;
+    
+    if (!Array.isArray(this.savings.history)) this.savings.history = [];
+    this.savings.history.unshift({
+      id: 'sav_' + Date.now(),
+      date: new Date().toISOString(),
+      amount: surplus,
+      type: 'surplus',
+      label: `Surplus début de mois versé (+${surplus.toLocaleString('fr-FR')} €)`
+    });
+
+    this.saveSavings();
+    return surplus;
+  }
+
+  transferMonthEndLeftover(amount) {
+    const val = Math.max(0, parseFloat(amount) || 0);
+    if (val <= 0) return 0;
+
+    this.savings.totalSavings = (this.savings.totalSavings || 0) + val;
+    this.savings.currentCheckingBalance = Math.max(0, (this.savings.currentCheckingBalance || 0) - val);
+
+    if (!Array.isArray(this.savings.history)) this.savings.history = [];
+    this.savings.history.unshift({
+      id: 'sav_' + Date.now(),
+      date: new Date().toISOString(),
+      amount: val,
+      type: 'month_end',
+      label: `Restant fin de mois mis de côté (+${val.toLocaleString('fr-FR')} €)`
+    });
+
+    this.saveSavings();
+    return val;
   }
 }
